@@ -23,9 +23,13 @@ namespace RNAqbase.Repository
 				var result = await connection.QueryAsync<TetradDescription>
 				(@"
 					SELECT t.id, 
+						t.public_id as ""Public_id"",
+						t.basename as ""Basename"",
 						t.quadruplex_id as ""QuadruplexIdAsInt"", 
+						q.public_id as ""Quadruplex_public_id"",
 						t.dot_bracket as ""Dot_bracket"",
 						pdb1.identifier as ""PdbIdentifier"", 
+						pdb1.public_id as ""Pdb_public_id"",
 						pdb1.title as ""Title"",
 						pdb1.id as ""PdbId"", 
 						pdb1.experiment as ""Experiment"",
@@ -38,6 +42,7 @@ namespace RNAqbase.Repository
 						(SELECT count(*) from tetrad tcount where tcount.quadruplex_id = t.quadruplex_id) as ""TetradsInQuadruplex"", 
 						t.gba_tetrad_class as ""TetradCombination""
 					FROM tetrad t
+						JOIN quadruplex q on t.quadruplex_id = q.id
 						JOIN nucleotide n1 on t.nt1_id = n1.id
 						JOIN nucleotide n2 on t.nt2_id = n2.id
 						JOIN nucleotide n3 on t.nt3_id = n3.id
@@ -56,8 +61,11 @@ namespace RNAqbase.Repository
 				return await connection.QueryAsync<TetradTable>
 				(@"
 					SELECT max(t.id) as id, 
+					max(t.public_id) as Public_id,
 	t.quadruplex_id as QuadruplexId, 
+	max(q.public_id) as Quadruplex_public_id,
 	max(pdb1.identifier) as PdbId, 
+	max(pdb1.public_id) as Pdb_public_id,
 	to_char(max(pdb1.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 	COALESCE(max(pdb1.assembly), 0) as AssemblyId,
 	COALESCE(max(n1.molecule), 'Other') as Molecule,
@@ -152,6 +160,8 @@ namespace RNAqbase.Repository
 				return await connection.QueryAsync<TetradReference>
 				(@"
 	                SELECT t.id, 
+						t.public_id as ""Public_id"",
+						q.public_id as ""Quadruplex_public_id"",
 		                COALESCE((n1.short_name)||(n2.short_name)||(n3.short_name)||(n4.short_name), '') as ""Sequence"",
 		                t.onz as ""OnzClass"",
 		                t.planarity_deviation as ""Planarity"",
@@ -160,6 +170,7 @@ namespace RNAqbase.Repository
 		                tp.tetrad2_id, 
 		                tp.direction
 	                FROM tetrad t
+						JOIN quadruplex q on t.quadruplex_id = q.id
 		                JOIN nucleotide n1 on t.nt1_id = n1.id
 		                JOIN nucleotide n2 on t.nt2_id = n2.id
 		                JOIN nucleotide n3 on t.nt3_id = n3.id
@@ -178,6 +189,8 @@ namespace RNAqbase.Repository
 				return await connection.QueryAsync<TetradReference>
 				(@"
 	                SELECT t.id, 
+						t.public_id as ""Public_id"",
+						q.public_id as ""Quadruplex_public_id"",
 		                COALESCE((n1.short_name)||(n2.short_name)||(n3.short_name)||(n4.short_name), '') as ""Sequence"",
 		                t.onz as ""OnzClass"",
 		                t.planarity_deviation as ""Planarity"",
@@ -188,6 +201,7 @@ namespace RNAqbase.Repository
 						t.quadruplex_id as ""Quadruplex_id"",
                 		t2.quadruplex_id as ""Quadruplex_pair_id""
 					FROM tetrad t
+						JOIN quadruplex q on t.quadruplex_id = q.id
 						JOIN nucleotide n1 on t.nt1_id = n1.id
 						JOIN nucleotide n2 on t.nt2_id = n2.id
 						JOIN nucleotide n3 on t.nt3_id = n3.id
@@ -196,6 +210,25 @@ namespace RNAqbase.Repository
                 		LEFT JOIN tetrad t2 on t2.id = tp.tetrad2_id
 					WHERE t.quadruplex_id IN (select quadruplex_id from helix_quadruplex where helix_id = @HelixId)
 					ORDER BY  t.id;", new { HelixId = id });
+			}
+		}
+
+		public async Task<IEnumerable<TetradSummary>> GetTetradSummariesByPdbId(int pdbId)
+		{
+			using (var connection = Connection)
+			{
+				connection.Open();
+				return await connection.QueryAsync<TetradSummary>
+				(@"
+					SELECT
+						t.id AS Id,
+						t.public_id AS Public_id,
+						t.quadruplex_id AS Quadruplex_id
+					FROM tetrad t
+						JOIN nucleotide n1 on t.nt1_id = n1.id
+					WHERE n1.pdb_id = @PdbId
+					ORDER BY t.quadruplex_id, t.id;",
+					new { PdbId = pdbId });
 			}
 		}
 

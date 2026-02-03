@@ -16,8 +16,11 @@ namespace RNAqbase.Models
 		public int TypeCount { get; set; }
 
 		public string Id { get; set; }
+		public string Public_id { get; set; }
+		public string Basename { get; set; }
 		public string OnzmClass { get; set; }
 		public string PdbIdentifier { get; set; }
+		public string Pdb_public_id { get; set; }
 		public string Title { get; set; }
 		public int PdbId { get; set; }
 		public string Dot_bracket { get; set; }

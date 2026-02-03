@@ -49,6 +49,13 @@ namespace RNAqbase.Controllers
             return Ok(await quadruplexService.GetQuadruplexesByPdbId(pdbId, quadruplexId));
         }
 
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetQuadruplexSummariesByPdbId(int pdbId)
+        {
+            if (pdbId == 0) return BadRequest();
+            return Ok(await quadruplexService.GetQuadruplexSummariesByPdbId(pdbId));
+        }
+
 
         [HttpGet("[action]")]
         public async Task<IActionResult> GetListOfQuadruplex(int id)

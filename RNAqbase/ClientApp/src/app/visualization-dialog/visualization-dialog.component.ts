@@ -35,7 +35,7 @@ export class VisualizationDialogComponent implements OnInit {
     this.id = this.data.id;
     this.type = this.data.type;
 
-    if (this.id.startsWith('H') && this.type != "layers") {
+    if (this.data.isHelix && this.type != "layers") {
       this.width = '100%';
     }
   }
@@ -103,4 +103,5 @@ export class VisualizationDialogComponent implements OnInit {
 interface DialogData {
   id: string;
   type: string;
+  isHelix?: boolean;
 }

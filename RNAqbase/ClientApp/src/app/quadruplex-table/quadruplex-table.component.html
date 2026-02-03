@@ -36,7 +36,7 @@
               <mat-cell *matCellDef="let row">
                 <span class="mobile-label">ID:</span>
                 <a class="hasTooltip" [routerLink]="['/quadruplex', row.id]">
-                  {{ row.quadruplex_id }} <span> <img src="static/pymol/{{ row.quadruplex_id }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.quadruplex_id }} <span> <img src="static/pymol/{{ row.public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>
@@ -46,7 +46,7 @@
               <mat-cell *matCellDef="let row">
                 <span class="mobile-label">Pdb ID</span>
                 <a class="hasTooltip" target="_blank" rel="noopener noreferrer" href="https://www.rcsb.org/structure/{{ row.pdbId }}">
-                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdbId }}-assembly{{ row.assemblyId }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdb_public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>

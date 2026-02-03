@@ -35,7 +35,7 @@
               <mat-cell *matCellDef="let row">
                 <span class="mobile-label">ID:</span>
                 <a class="hasTooltip" [routerLink]="['/helices', row.id]">
-                  {{ row.helix_id }} <span> <img src="static/pymol/H{{ row.id }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.helix_id }} <span> <img src="static/pymol/{{ row.public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>
@@ -45,7 +45,7 @@
               <mat-cell *matCellDef="let row">
                 <span class="mobile-label">Pdb ID</span>
                 <a class="hasTooltip" target="_blank" rel="noopener noreferrer" href="https://www.rcsb.org/structure/{{ row.pdbId }}">
-                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdbId }}-assembly{{ row.assemblyId }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdb_public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>
@@ -109,10 +109,10 @@
               <mat-header-cell *matHeaderCellDef mat-sort-header="quadruplex_id">Quadruplex ID</mat-header-cell>
               <mat-cell *matCellDef="let row">
                 <span class="mobile-label">Quadruplex ID</span>
-                <a *ngFor="let t of row.quadruplexesIds" [routerLink]="['/quadruplex', t.slice(1)]">
+                <a *ngFor="let t of row.quadruplexesIds; let i = index" [routerLink]="['/quadruplex', t.slice(1)]">
                   <a class="hasTooltip"
                     ><p style="font-size: 14px">{{ t }}</p>
-                    <span> <img src="static/pymol/{{ t }}.png" width="200" height="150" alt="" /> </span
+                    <span> <img src="static/pymol/{{ row.quadruplexesPublicIds[i] }}.png" width="200" height="150" alt="" /> </span
                   ></a>
                 </a>
               </mat-cell>

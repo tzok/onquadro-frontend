@@ -64,11 +64,15 @@ export class QuadruplexTableComponent implements OnInit {
 
   setTableValues() {
     for (let val of this.csvData) {
+      val.public_id = val.public_id || val.basename;
+      val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
       val.id = 'Q' + val.id;
       val.sequence = this.truncate(val.sequence);
     }
     this.dataSource = new MatTableDataSource(this.rawResult);
     for (let val of this.rawResult) {
+      val.public_id = val.public_id || val.basename;
+      val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
       val.quadruplex_id = 'Q' + val.id;
       val.sequence = this.truncate(val.sequence);
     }
@@ -173,11 +177,15 @@ export class QuadruplexTableComponent implements OnInit {
 interface Quadruplex {
   id: string;
   quadruplex_id: any;
+  public_id: string;
+  basename?: string;
   loopTopology: string;
   ion: string;
   ion_charge: string;
   tetradCombination: string;
   pdbId: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   assemblyId: number;
   molecule: string;
   experiment: string;

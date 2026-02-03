@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, Input } from '@angular/core';
+import { Component, OnInit, Inject, Input, AfterViewInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -16,7 +16,7 @@ import { Params } from '@angular/router';
 })
 
 
-export class StatisticsComponent implements OnInit {
+export class StatisticsComponent implements OnInit, AfterViewInit {
 
   topologyBaseTableOne: TopologyBaseTetradViewTableOne[];
   topologyBaseTableTwo: TopologyBaseTetradViewTableTwo[];
@@ -328,6 +328,56 @@ export class StatisticsComponent implements OnInit {
       }, error => console.error(error));
     }, error => console.error(error));
   }
+
+  ngAfterViewInit() {
+    // Inject GLOBAL shim into all plot iframes to fix "GLOBAL is not defined" error
+    this.injectGlobalShimIntoIframes();
+  }
+
+  private injectGlobalShimIntoIframes() {
+    // Find all iframes with the plot-iframe class
+    const iframes = document.querySelectorAll('iframe.plot-iframe');
+    
+    for (let i = 0; i < iframes.length; i++) {
+      const iframe = iframes[i] as HTMLIFrameElement;
+      // Wait for iframe to load, then inject the shim
+      if (iframe.contentWindow && iframe.contentWindow.document) {
+        this.injectShim(iframe);
+      } else {
+        // If not loaded yet, wait for load event
+        iframe.addEventListener('load', () => {
+          this.injectShim(iframe);
+        });
+      }
+    }
+  }
+
+  private injectShim(iframe: HTMLIFrameElement) {
+    try {
+      const doc = iframe.contentWindow && iframe.contentWindow.document;
+      if (!doc) return;
+
+      // Create and insert the GLOBAL shim script at the beginning of head
+      const shimScript = doc.createElement('script');
+      shimScript.textContent = 'var GLOBAL = window;';
+      
+      // Insert as the first script in head to ensure it runs before any other scripts
+      if (doc.head && doc.head.firstChild) {
+        doc.head.insertBefore(shimScript, doc.head.firstChild);
+      } else if (doc.head) {
+        doc.head.appendChild(shimScript);
+      } else {
+        // If no head exists, create one
+        const head = doc.createElement('head');
+        head.appendChild(shimScript);
+        doc.documentElement.insertBefore(head, doc.documentElement.firstChild);
+      }
+    } catch (e) {
+      // Silently fail if cross-origin restrictions apply
+      console.warn('Could not inject GLOBAL shim into iframe:', e);
+    }
+  }
+
 }
 
 

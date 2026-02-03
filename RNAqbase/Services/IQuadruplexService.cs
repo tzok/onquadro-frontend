@@ -12,6 +12,7 @@ namespace RNAqbase.Services
 		Task<List<Structure>> GetAllStructures();
 		Task<Quadruplex> GetQuadruplexById(int id);
 		Task<List<int>> GetQuadruplexesByPdbId(int pdbId, int quadruplexId);
+		Task<List<QuadruplexSummary>> GetQuadruplexSummariesByPdbId(int pdbId);
         Task<IEnumerable<Quadruplex>> FindAllQuadruplexInTheHelix(int id);
         Task<MemoryStream> GetQuadruplex3dVisualization(int quadruplexId);
         Task<IEnumerable<NucleotidesChiValues>> GetNucleotideChiValues(int id);

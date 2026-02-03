@@ -4,6 +4,23 @@
   library(RPostgres)
   library(DBI)
   setwd('/home/paulina/app/wwwroot/onquadro_plots/')
+  add_global_shim.function <- function(widget) {
+    shim_file <- "plotly-global-shim.js"
+    if (!file.exists(shim_file)) {
+      writeLines("var GLOBAL = window;", shim_file)
+    }
+    shim_dependency <- htmltools::htmlDependency(
+      name = "plotly-global-shim",
+      version = "1.0.0",
+      src = ".",
+      script = shim_file
+    )
+    htmltools::attachDependencies(widget, shim_dependency, append = FALSE)
+  }
+  save_plot_widget.function <- function(widget, file) {
+    widget <- add_global_shim.function(widget)
+    htmlwidgets::saveWidget(widget, file = file)
+  }
   # FUNCTION FOR DATA PREPARATION
   prepere_data_for_plot.function <- function(table) {
     
@@ -374,7 +391,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_tetrads_by_sequence_and_molecule_type$colors)
-  htmlwidgets::saveWidget(p, file = "number_of_tetrads_by_sequence_and_molecule_type.html")
+  save_plot_widget.function(p, file = "number_of_tetrads_by_sequence_and_molecule_type.html")
   
   
   # number_of_quadruplexes_composed_of_2_12_tetrads
@@ -394,7 +411,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_quadruplexes_composed_of_2_12_tetrads$colors)
-  htmlwidgets::saveWidget(p, file = "number_of_quadruplexes_composed_of_2_12_tetrads.html")
+  save_plot_widget.function(p, file = "number_of_quadruplexes_composed_of_2_12_tetrads.html")
   
   
   # number_of_uni_bi_and_tetramolecular_quadruplexes
@@ -420,7 +437,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_uni_bi_and_tetramolecular_quadruplexes$colors)
-  htmlwidgets::saveWidget(p, file = "number_of_uni_bi_and_tetramolecular_quadruplexes.html")
+  save_plot_widget.function(p, file = "number_of_uni_bi_and_tetramolecular_quadruplexes.html")
   
   
   # ONZ_class_coverage_by_uni_bi_and_tetramolecular_tetrad
@@ -432,7 +449,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZ_class_coverage_by_uni_bi_and_tetramolecular_tetrad$colors)
-  htmlwidgets::saveWidget(p, file = "ONZ_class_coverage_by_uni_bi_and_tetramolecular_tetrad.html")
+  save_plot_widget.function(p, file = "ONZ_class_coverage_by_uni_bi_and_tetramolecular_tetrad.html")
   
   
   # ONZM_class_coverage_by_unimolecular_quadruplexes
@@ -459,7 +476,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_unimolecular_quadruplexes$colors)
-  htmlwidgets::saveWidget(p, file = "ONZM_class_coverage_by_unimolecular_quadruplexes.html")
+  save_plot_widget.function(p, file = "ONZM_class_coverage_by_unimolecular_quadruplexes.html")
   
   
   # ONZM_class_coverage_by_bimolecular_quadruplexes
@@ -487,7 +504,7 @@
                texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_bimolecular_quadruplexes$colors)
-  htmlwidgets::saveWidget(p, file = "ONZM_class_coverage_by_bimolecular_quadruplexes.html")
+  save_plot_widget.function(p, file = "ONZM_class_coverage_by_bimolecular_quadruplexes.html")
   
   
   # ONZM_class_coverage_by_tetramolecular_quadruplexes
@@ -519,7 +536,7 @@
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_tetramolecular_quadruplexes$colors)
   
-  htmlwidgets::saveWidget(p, file = "ONZM_class_coverage_by_tetramolecular_quadruplexes.html")
+  save_plot_widget.function(p, file = "ONZM_class_coverage_by_tetramolecular_quadruplexes.html")
   
   
   texttemplate = "%{label}: %{value:,s} <br>(%{percent})"
@@ -548,7 +565,7 @@
   p <- p %>% layout(barmode = "overlay", xaxis = x, yaxis = y)
   p <- p %>% add_histogram(x = propeller_minus$loop_length, name='propeller-')
   p <- p %>% add_histogram(x = propeller_plus$loop_length, name='propeller+')
-  htmlwidgets::saveWidget(p, file = "Loop_length_by_propeller.html")
+  save_plot_widget.function(p, file = "Loop_length_by_propeller.html")
   
   # Loop length by lateral
   lateral_plus <- dbGetQuery(con, Query_loop_length_lateral_plus)
@@ -572,7 +589,7 @@
   p <- p %>% add_histogram(x = lateral_minus$loop_length, name='lateral-')
   p <- p %>% add_histogram(x = lateral_plus$loop_length, name='lateral+')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "Loop_length_by_lateral.html")
+  save_plot_widget.function(p, file = "Loop_length_by_lateral.html")
   
   
   # Loop length diagonal
@@ -594,7 +611,7 @@
   p <- p %>% layout(barmode = "overlay", xaxis = x, yaxis = y)
   p <- p %>% add_histogram(x = diagonal$loop_length, name='diagonal')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "Loop_length_by_diagonal.html")
+  save_plot_widget.function(p, file = "Loop_length_by_diagonal.html")
   
   
   #GBA DA SILVA
@@ -624,8 +641,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "GBA_da_Silva_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "GBA_da_Silva_pie.html")
+  save_plot_widget.function(p, file = "GBA_da_Silva_treemap.html")
+  save_plot_widget.function(fig, file = "GBA_da_Silva_pie.html")
   
   
   #LOOP DA SILVA
@@ -650,8 +667,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "loop_da_Silva_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "loop_da_Silva_pie.html")
+  save_plot_widget.function(p, file = "loop_da_Silva_treemap.html")
+  save_plot_widget.function(fig, file = "loop_da_Silva_pie.html")
   
   #RISE TWIST PLANARITY
   rise_twist_planarity <- dbGetQuery(con, Query_planarity_rise_twist_values)
@@ -674,7 +691,7 @@
   p <- p %>% layout(barmode = "overlay", xaxis = x, yaxis = y)
   p <- p %>% add_histogram(x = rise_twist_planarity$planarity, name='planarity')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "planarity.html")
+  save_plot_widget.function(p, file = "planarity.html")
   
   #rise
   p <- plot_ly(alpha = 0.6)
@@ -694,7 +711,7 @@
   p <- p %>% layout(barmode = "overlay", xaxis = x, yaxis = y)
   p <- p %>% add_histogram(x = rise_twist_planarity$rise, name='planarity')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "rise.html")
+  save_plot_widget.function(p, file = "rise.html")
   
   #twist
   p <- plot_ly(alpha = 0.6)
@@ -714,7 +731,7 @@
   p <- p %>% layout(barmode = "overlay", xaxis = x, yaxis = y)
   p <- p %>% add_histogram(x = rise_twist_planarity$twist, name='planarity')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "twist.html")
+  save_plot_widget.function(p, file = "twist.html")
   
   # chi value o plus syn/anti
   chi_anti_o_plus <- dbGetQuery(con, get_query_chi_value.function(c('O+', 'anti')))
@@ -738,7 +755,7 @@
   p <- p %>% add_histogram(x = chi_anti_o_plus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_o_plus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_o_plus.html")
+  save_plot_widget.function(p, file = "chi_value_o_plus.html")
   
   # chi value o minus syn/anti
   chi_anti_o_minus <- dbGetQuery(con, get_query_chi_value.function(c('O-', 'anti')))
@@ -762,7 +779,7 @@
   p <- p %>% add_histogram(x = chi_anti_o_minus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_o_minus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_o_minus.html")
+  save_plot_widget.function(p, file = "chi_value_o_minus.html")
   
   # chi value n plus syn/anti
   chi_anti_n_plus <- dbGetQuery(con, get_query_chi_value.function(c('N+', 'anti')))
@@ -786,7 +803,7 @@
   p <- p %>% add_histogram(x = chi_anti_n_plus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_n_plus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_n_plus.html")
+  save_plot_widget.function(p, file = "chi_value_n_plus.html")
   
   # chi value n minus syn/anti
   chi_anti_n_minus <- dbGetQuery(con, get_query_chi_value.function(c('N-', 'anti')))
@@ -810,7 +827,7 @@
   p <- p %>% add_histogram(x = chi_anti_n_minus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_n_minus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_n_minus.html")
+  save_plot_widget.function(p, file = "chi_value_n_minus.html")
   
   # chi value z plus syn/anti
   chi_anti_z_plus <- dbGetQuery(con, get_query_chi_value.function(c('Z+', 'anti')))
@@ -834,7 +851,7 @@
   p <- p %>% add_histogram(x = chi_anti_z_plus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_z_plus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_z_plus.html")
+  save_plot_widget.function(p, file = "chi_value_z_plus.html")
   
   # chi value z minus syn/anti
   chi_anti_z_minus <- dbGetQuery(con, get_query_chi_value.function(c('Z-', 'anti')))
@@ -858,7 +875,7 @@
   p <- p %>% add_histogram(x = chi_anti_z_minus$chi, name='anti')
   p <- p %>% add_histogram(x = chi_syn_z_minus$chi, name='syn')
   p <- p %>% layout(barmode = "overlay")
-  htmlwidgets::saveWidget(p, file = "chi_value_z_minus.html")
+  save_plot_widget.function(p, file = "chi_value_z_minus.html")
   
   
   # Query_ion_o_plus
@@ -884,8 +901,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_o_plus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_o_plus_pie.html")
+  save_plot_widget.function(p, file = "ion_o_plus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_o_plus_pie.html")
   
   # Query_ion_o_minus
   ion_o_minus <- dbGetQuery(con, get_query_ion.function('O-'))
@@ -910,8 +927,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_o_minus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_o_minus_pie.html")
+  save_plot_widget.function(p, file = "ion_o_minus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_o_minus_pie.html")
   
   # Query_ion_n_plus
   ion_n_plus <- dbGetQuery(con, get_query_ion.function('N+'))
@@ -936,8 +953,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_n_plus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_n_plus_pie.html")
+  save_plot_widget.function(p, file = "ion_n_plus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_n_plus_pie.html")
   
   # Query_ion_n_minus
   ion_n_minus <- dbGetQuery(con, get_query_ion.function('N-'))
@@ -962,8 +979,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_n_minus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_n_minus_pie.html")
+  save_plot_widget.function(p, file = "ion_n_minus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_n_minus_pie.html")
   
   # Query_ion_z_plus
   ion_z_plus <- dbGetQuery(con, get_query_ion.function('Z+'))
@@ -989,8 +1006,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_ion_z_plus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_ion_z_plus_pie.html")
+  save_plot_widget.function(p, file = "ion_ion_z_plus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_ion_z_plus_pie.html")
   
   # Query_ion_z_minus
   ion_z_minus <- dbGetQuery(con, get_query_ion.function('Z-'))
@@ -1018,8 +1035,8 @@
                texttemplate = "%{label}: %{value:,s}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
-  htmlwidgets::saveWidget(p, file = "ion_ion_z_minus_treemap.html")
-  htmlwidgets::saveWidget(fig, file = "ion_ion_z_minus_pie.html")
+  save_plot_widget.function(p, file = "ion_ion_z_minus_treemap.html")
+  save_plot_widget.function(fig, file = "ion_ion_z_minus_pie.html")
   
   
   
@@ -1046,9 +1063,8 @@
   
   
   
-  htmlwidgets::saveWidget(fig, file = "loop_length.html")
+  save_plot_widget.function(fig, file = "loop_length.html")
   
   
   
   
-

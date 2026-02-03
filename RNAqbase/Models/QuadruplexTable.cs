@@ -14,7 +14,9 @@ namespace RNAqbase.Models
         [JsonIgnore] public int TypeCount { get; set; }
 
         public string Id { get; set; }
+        public string Public_id { get; set; }
         public string PdbId { get; set; }
+        public string Pdb_public_id { get; set; }
         public string PdbDeposition { get; set; }
         public int AssemblyId { get; set; }
         public string Molecule { get; set; }

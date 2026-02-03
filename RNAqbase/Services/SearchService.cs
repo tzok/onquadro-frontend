@@ -14,12 +14,14 @@ namespace RNAqbase.Services
         private readonly ISearchRepository searchRepository;
         private StringBuilder querySB = new StringBuilder(
 @"SELECT
-MAX(q.id) AS Id,
-q.loop_class as LoopTopology,
-STRING_AGG(DISTINCT(qg.gba_quadruplex_class)::text,', ') AS TetradCombination,
-CONCAT(MAX(q.onzm), MAX(q.subtype)) AS OnzmClass,
-to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
-MAX(p.identifier) AS PdbId,
+ MAX(q.id) AS Id,
+ MAX(q.public_id) AS Public_id,
+ q.loop_class as LoopTopology,
+ STRING_AGG(DISTINCT(qg.gba_quadruplex_class)::text,', ') AS TetradCombination,
+ CONCAT(MAX(q.onzm), MAX(q.subtype)) AS OnzmClass,
+ to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
+ MAX(p.identifier) AS PdbId,
+ MAX(p.public_id) AS Pdb_public_id,
 string_agg(DISTINCT(ion.name)::text, ', ') as Ion,
 string_agg(DISTINCT(ion.charge)::text, ', ') as Ion_charge,  
 MAX(p.assembly) AS AssemblyId,

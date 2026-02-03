@@ -35,7 +35,7 @@
               <mat-header-cell *matHeaderCellDef mat-sort-header="tetrad_id"> Tetrad ID<sup matTooltip="Click ID to see tetrad description">&#9432;</sup> </mat-header-cell>
               <mat-cell *matCellDef="let row">
                 <a class="hasTooltip" [routerLink]="['/tetrad', row.id.slice(1)]">
-                  {{ row.id }} <span> <img src="static/pymol/{{ row.id }}.png" width="110" height="110" alt="" /> </span>
+                  {{ row.id }} <span> <img src="static/pymol/{{ row.public_id }}.png" width="110" height="110" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>
@@ -45,7 +45,7 @@
               <mat-header-cell *matHeaderCellDef mat-sort-header="quadruplex_id"> Quadruplex ID <sup matTooltip="Click ID to see quadruplex description">&#9432;</sup> </mat-header-cell>
               <mat-cell *matCellDef="let row">
                 <a class="hasTooltip" *ngIf="row.quadruplexId != '99999999'" [routerLink]="['/quadruplex', row.quadruplexId.slice(1)]">
-                  {{ row.quadruplexId }} <span> <img src="static/pymol/{{ row.quadruplexId }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.quadruplexId }} <span> <img src="static/pymol/{{ row.quadruplex_public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
                 <a *ngIf="row.quadruplexId === '99999999'">n/a</a>
               </mat-cell>
@@ -55,7 +55,7 @@
               <mat-header-cell *matHeaderCellDef mat-sort-header="pdbId"> PDB ID <sup matTooltip="Click ID to visit PDB record">&#9432;</sup> </mat-header-cell>
               <mat-cell *matCellDef="let row">
                 <a class="hasTooltip" target="_blank" rel="noopener noreferrer" href="https://www.rcsb.org/structure/{{ row.pdbId }}">
-                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdbId }}-assembly{{ row.assemblyId }}.png" width="200" height="150" alt="" /> </span>
+                  {{ row.pdbId }} <span> <img src="static/pymol/{{ row.pdb_public_id }}.png" width="200" height="150" alt="" /> </span>
                 </a>
               </mat-cell>
             </ng-container>

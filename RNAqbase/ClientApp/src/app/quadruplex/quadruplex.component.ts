@@ -7,6 +7,7 @@ import * as JSZip from 'jszip';
 import { DomSanitizer } from '@angular/platform-browser';
 import { Visualization3DComponent } from "../visualization3-d/visualization3-d.component";
 import { saveAs } from "file-saver";
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-quadruplex',
@@ -18,6 +19,8 @@ export class QuadruplexComponent implements OnInit {
   _3d_layers;
   _2d_structure_varna;
   _2d_structure_rchie;
+  readonly sequenceLineLength = 60;
+  tetradPublicIdById = new Map<string, string>();
 
   data: Quadruplex = <Quadruplex>{ quadruplexesInTheSamePdb: [] };
   tetrads: Tetrad[];
@@ -27,6 +30,7 @@ export class QuadruplexComponent implements OnInit {
   nucleotideChiValues: NucleotideChiValues[];
   quadruplexLoops: QuadruplexLoops[] = [];
   ions: Ions[] = []
+  structureTree: StructureTree;
   quadruplexId: string;
   sub;
 
@@ -43,15 +47,20 @@ export class QuadruplexComponent implements OnInit {
       this.quadruplexId = params.get('quadruplexId');
       this.http.get<Quadruplex>(this.baseUrl + '' + 'api/Quadruplex/GetQuadruplexById?id=' + '' + this.quadruplexId).subscribe(result => {
         this.data = result;
+        this.data.public_id = this.data.public_id || this.data.basename;
+        this.data.pdb_public_id = this.data.pdb_public_id || this.data.pdb_basename;
         this.data.id = 'Q' + this.data.id;
         this.csvData = JSON.parse(JSON.stringify(this.data));
 
-        this.http.get<number[]>(this.baseUrl + '' + 'api/Quadruplex/GetQuadruplexesByPdbId?pdbId=' + this.data.pdbId + '&quadruplexId=' + this.quadruplexId).subscribe(result => {
-          if (result) {
-            this.data.quadruplexesInTheSamePdb = result;
-            this.csvData.quadruplexesInTheSamePdb = result.join(';');
-          }
-          else this.data.quadruplexesInTheSamePdb = [];
+        const quadSummaries$ = this.http.get<QuadruplexSummary[]>(this.baseUrl + 'api/Quadruplex/GetQuadruplexSummariesByPdbId?pdbId=' + this.data.pdbId);
+        const tetradSummaries$ = this.http.get<TetradSummary[]>(this.baseUrl + 'api/Tetrad/GetTetradSummariesByPdbId?pdbId=' + this.data.pdbId);
+        forkJoin([quadSummaries$, tetradSummaries$]).subscribe(([summaries, tetradSummaries]) => {
+          const quadSummaries = summaries || [];
+          const otherIds = quadSummaries.map(summary => summary.id).filter(id => id !== Number(this.quadruplexId));
+          this.data.quadruplexesInTheSamePdb = otherIds;
+          this.csvData.quadruplexesInTheSamePdb = otherIds.join(';');
+
+          this.buildStructureTree(quadSummaries, tetradSummaries || []);
           this.http.get<Tetrad[]>(this.baseUrl + '' + 'api/Tetrad/GetListOfTetrads?id=' + '' + this.quadruplexId).subscribe(result => {
             this.tetrads = result;
 
@@ -60,6 +69,10 @@ export class QuadruplexComponent implements OnInit {
             for (let val of result) {
               val.id = 'T' + val.id;
               val.tetrad2_id = 'T' + val.tetrad2_id;
+              val.public_id = val.public_id || val.basename;
+              if (val.public_id) {
+                this.tetradPublicIdById.set(val.id, val.public_id);
+              }
             }
 
             for (let val of result) {
@@ -67,6 +80,8 @@ export class QuadruplexComponent implements OnInit {
                 this.tetradsPairsTable.push({
                   TetradId: val.id,
                   TetradPairId: val.tetrad2_id,
+                  TetradPublicId: this.tetradPublicIdById.get(val.id),
+                  TetradPairPublicId: this.tetradPublicIdById.get(val.tetrad2_id),
                   twist: val.twist,
                   rise: val.rise,
                   direction: val.direction
@@ -85,7 +100,9 @@ export class QuadruplexComponent implements OnInit {
             this.http.get<NucleotideChiValues[]>(this.baseUrl + '' + 'api/Quadruplex/GetNucleotideChiValues?id=' + '' + this.data.id.slice(1)).subscribe(result => {
               this.nucleotideChiValues = result;
               for (let val of this.nucleotideChiValues) {
+                const tetradId = val.tetrad_id;
                 val.tetrad_id = 'T' + val.tetrad_id;
+                val.tetrad_public_id = this.tetradPublicIdById.get('T' + tetradId);
               }
             }, error => console.error(error));
 
@@ -108,6 +125,45 @@ export class QuadruplexComponent implements OnInit {
       }, error => console.error(error));
     });
   }
+
+  private buildStructureTree(quadruplexes: QuadruplexSummary[], tetrads: TetradSummary[]) {
+    const uniqueQuadruplexes = (quadruplexes || []).filter(quadruplex => quadruplex && quadruplex.id > 0);
+    if (uniqueQuadruplexes.length === 0) {
+      this.structureTree = null;
+      return;
+    }
+    const currentQuadruplexId = Number(this.quadruplexId);
+    const quadPublicIds = new Map<number, string>();
+    for (let quad of uniqueQuadruplexes) {
+      quadPublicIds.set(quad.id, quad.public_id || quad.basename);
+    }
+    const tetradsByQuad = new Map<number, TetradNode[]>();
+    for (let tetrad of tetrads || []) {
+      if (!tetradsByQuad.has(tetrad.quadruplex_id)) {
+        tetradsByQuad.set(tetrad.quadruplex_id, []);
+      }
+      tetradsByQuad.get(tetrad.quadruplex_id).push({
+        id: tetrad.id,
+        public_id: tetrad.public_id || tetrad.basename
+      });
+    }
+    tetradsByQuad.forEach((quadTetrads, quadId) => {
+      quadTetrads.sort((a, b) => a.id - b.id);
+      tetradsByQuad.set(quadId, quadTetrads);
+    });
+    this.structureTree = {
+      pdbId: this.data.pdbIdentifier,
+      assemblyId: this.data.assemblyId,
+      quadruplexes: uniqueQuadruplexes
+        .sort((a, b) => a.id - b.id)
+        .map(quadruplex => ({
+          id: quadruplex.id,
+          public_id: quadPublicIds.get(quadruplex.id),
+          isCurrent: quadruplex.id === currentQuadruplexId,
+          tetrads: tetradsByQuad.get(quadruplex.id) || []
+        }))
+    };
+  }
   ngOnDestroy() {
     this.sub.unsubscribe();
   }
@@ -123,7 +179,7 @@ export class QuadruplexComponent implements OnInit {
 
   show2dStructure(type: any) {
     let dialogRef = this.dialog.open(VisualizationDialogComponent, {
-      data: { type: type, id: this.data.id },
+      data: { type: type, id: this.data.public_id },
     });
   }
 
@@ -132,19 +188,19 @@ export class QuadruplexComponent implements OnInit {
   };
 
   downloadZip(): void {
-    this.http.get("/static/pymol/" + this.data.id + ".png", { responseType: "arraybuffer" })
+    this.http.get("/static/pymol/" + this.data.public_id + ".png", { responseType: "arraybuffer" })
       .subscribe(data => {
         this._3d_structure = data;
 
-        this.http.get("/static/varna/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+        this.http.get("/static/varna/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
           .subscribe(data => {
             this._2d_structure_varna = data;
 
-            this.http.get("/static/rchie/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+            this.http.get("/static/rchie/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
               .subscribe(data => {
                 this._2d_structure_rchie = data;
 
-                this.http.get("/static/layers/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+                this.http.get("/static/layers/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
                   .subscribe(data => {
                     this._3d_layers = data;
 
@@ -176,6 +232,26 @@ export class QuadruplexComponent implements OnInit {
       });
   }
 
+  formatFixedWidth(value: string, lineLength: number = this.sequenceLineLength): string {
+    if (!value) {
+      return '';
+    }
+    const length = Math.max(1, Math.floor(lineLength));
+    return value
+      .split(/\r?\n/)
+      .map(line => {
+        let result = '';
+        for (let i = 0; i < line.length; i += length) {
+          result += line.slice(i, i + length);
+          if (i + length < line.length) {
+            result += '\n';
+          }
+        }
+        return result;
+      })
+      .join('\n');
+  }
+
   generateFile(data: any) {
     const replacer = (key, value) => value === null ? '' : value;
     const header = Object.keys(data[0]);
@@ -189,8 +265,12 @@ export class QuadruplexComponent implements OnInit {
 
 interface Quadruplex {
   id: any;
+  public_id: string;
+  basename?: string;
   pdbId: number;
   pdbIdentifier: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   title: string;
   assemblyId: number;
   molecule: string;
@@ -209,6 +289,8 @@ interface Quadruplex {
 
 interface Tetrad {
   id: any;
+  public_id: string;
+  basename?: string;
   sequence: string;
   onzClass: string;
   twist: number;
@@ -228,6 +310,8 @@ interface TetradInformations {
 interface TetradPairsInformations {
   TetradId: any;
   TetradPairId: any;
+  TetradPublicId: string;
+  TetradPairPublicId: string;
   twist: number;
   rise: number;
   direction: string;
@@ -235,6 +319,7 @@ interface TetradPairsInformations {
 
 interface NucleotideChiValues {
   tetrad_id: any;
+  tetrad_public_id: string;
   n1_chi: number;
   n1_glycosidic_bond: string;
   n2_chi: number;
@@ -243,6 +328,43 @@ interface NucleotideChiValues {
   n3_glycosidic_bond: string;
   n4_chi: number;
   n4_glycosidic_bond: string;
+}
+
+interface TetradReference {
+  id: number;
+  public_id?: string;
+  basename?: string;
+}
+
+interface StructureTree {
+  pdbId: string;
+  assemblyId: number;
+  quadruplexes: StructureQuadruplex[];
+}
+
+interface StructureQuadruplex {
+  id: number;
+  public_id?: string;
+  isCurrent: boolean;
+  tetrads: TetradNode[];
+}
+
+interface TetradNode {
+  id: number;
+  public_id?: string;
+}
+
+interface QuadruplexSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+}
+
+interface TetradSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+  quadruplex_id: number;
 }
 
 interface QuadruplexLoops {

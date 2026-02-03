@@ -88,6 +88,13 @@ p {
   white-space: pre-wrap;
 }
 
+.fixed-sequence {
+  display: inline-block;
+  white-space: pre;
+  width: calc(var(--seq-chars) * 1ch);
+  max-width: 100%;
+}
+
 .card {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2); /* this adds the "card" effect */
   padding: 16px;
@@ -145,6 +152,40 @@ button:focus {
 
 .lists {
   margin-top: 20px;
+}
+
+.nested-list {
+  margin: 5px 0 10px;
+}
+
+.nested-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.structure-tree {
+  margin-top: 8px;
+}
+
+.tree-header {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.tree-node {
+  margin-bottom: 8px;
+}
+
+.tree-quad {
+  font-weight: bold;
+}
+
+.tree-quad.current {
+  color: #2c3e50;
+}
+
+.tree-tetrads {
+  margin-left: 16px;
 }
 
 .saveDataButton {

@@ -41,7 +41,7 @@
                   <tr>
                     <td class="nineColumnsStyle" style="text-align: center; vertical-align: middle">
                       <a class="hasTooltip" target="_blank" rel="noopener noreferrer" href="https://www.rcsb.org/structure/{{ data.pdbIdentifier }}"
-                        >{{ data.pdbIdentifier }}<span><img src="static/pymol/{{ data.pdbIdentifier }}-assembly{{ data.assemblyId }}.png" width="200" height="150" alt="" /></span>
+                        >{{ data.pdbIdentifier }}<span><img src="static/pymol/{{ data.pdb_public_id }}.png" width="200" height="150" alt="" /></span>
                       </a>
                     </td>
                     <td class="nineColumnsStyle" style="text-align: center; vertical-align: middle">{{ data.assemblyId }}</td>
@@ -65,7 +65,7 @@
           <mat-card-content>
             <div>
               <h5>2D structure (dot-bracket):</h5>
-              <p class="dotbracket">{{ data.dot_bracket }}</p>
+              <p class="dotbracket fixed-sequence" [style.--seq-chars]="sequenceLineLength" [innerText]="formatFixedWidth(data.dot_bracket)"></p>
             </div>
 
             <div style="margin-top: 30px">
@@ -73,25 +73,25 @@
                 <div class="column">
                   <button (click)="show2dStructure('varna')" title="Click to see 2D structure">
                     <div class="text">2D structure (classic diagram)</div>
-                    <figure><img src="static/varna/{{ data.id }}.svg" width="160px" height="160px" alt="varna" /></figure>
+                    <figure><img src="static/varna/{{ data.public_id }}.svg" width="160px" height="160px" alt="varna" /></figure>
                   </button>
                 </div>
                 <div class="column">
                   <button (click)="show2dStructure('rchie')" title="Click to see 2D structure">
                     <div class="text">2D structure (arc diagram)</div>
-                    <figure><img src="static/rchie/{{ data.id }}.svg" width="160px" height="150px" alt="r-chie" /></figure>
+                    <figure><img src="static/rchie/{{ data.public_id }}.svg" width="160px" height="150px" alt="r-chie" /></figure>
                   </button>
                 </div>
                 <div class="column">
                   <button (click)="show2dStructure('layers')" title="Click to see 3D structure">
                     <div class="text">2.5D structure (layer diagram)</div>
-                    <figure><img src="static/layers/{{ data.id }}.svg" width="180px" height="150px" alt="layers" /></figure>
+                    <figure><img src="static/layers/{{ data.public_id }}.svg" width="180px" height="150px" alt="layers" /></figure>
                   </button>
                 </div>
                 <div class="column">
                   <button (click)="show3dStructure()" title="Click to see 3D structure">
                     <div class="text">3D structure (all-atom/surface model)</div>
-                    <figure><img src="static/pymol/{{ data.id }}.png" width="180px" height="130px" alt="litemol" /></figure>
+                    <figure><img src="static/pymol/{{ data.public_id }}.png" width="180px" height="130px" alt="litemol" /></figure>
                   </button>
                 </div>
               </div>
@@ -119,7 +119,7 @@
                   <tr *ngFor="let t of tetrads">
                     <td class="fourColumnsStyle" style="text-align: center; vertical-align: middle">
                       <a class="hasTooltip" [routerLink]="['/tetrad', t.id.slice(1)]">
-                        {{ t.id }} <span> <img src="static/pymol/{{ t.id }}.png" width="100" height="100" alt="" /> </span>
+                        {{ t.id }} <span> <img src="static/pymol/{{ t.public_id }}.png" width="100" height="100" alt="" /> </span>
                       </a>
                     </td>
                     <td class="fourColumnsStyle" style="text-align: center; vertical-align: middle">{{ t.sequence }}</td>
@@ -149,11 +149,11 @@
                   <tr *ngFor="let t of tetradsPairsTable">
                     <td class="fourColumnsStyle" style="text-align: center; vertical-align: middle" *ngIf="t.TetradPairId.slice(1) != 0">
                       <a class="hasTooltip" [routerLink]="['/tetrad', t.TetradId.slice(1)]">
-                        {{ t.TetradId }} <span> <img src="static/pymol/{{ t.TetradId }}.png" width="100" height="100" alt="" /> </span>
+                        {{ t.TetradId }} <span> <img src="static/pymol/{{ t.TetradPublicId }}.png" width="100" height="100" alt="" /> </span>
                       </a>
                       -
                       <a class="hasTooltip" [routerLink]="['/tetrad', t.TetradPairId.slice(1)]">
-                        {{ t.TetradPairId }} <span> <img src="static/pymol/{{ t.TetradPairId }}.png" width="100" height="100" alt="" /> </span>
+                        {{ t.TetradPairId }} <span> <img src="static/pymol/{{ t.TetradPairPublicId }}.png" width="100" height="100" alt="" /> </span>
                       </a>
                     </td>
                     <td class="fourColumnsStyle" style="text-align: center; vertical-align: middle" *ngIf="t.TetradPairId.slice(1) != 0">{{ t.twist | number: "1.0-2" }}</td>
@@ -215,13 +215,13 @@
                     <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">
                       <a class="hasTooltip" [routerLink]="['/tetrad', n.tetrad_id.slice(1)]"
                         >{{ n.tetrad_id }}
-                        <span> <img src="static/pymol/{{ n.tetrad_id }}.png" width="100" height="100" alt="" /> </span>
+                        <span> <img src="static/pymol/{{ n.tetrad_public_id }}.png" width="100" height="100" alt="" /> </span>
                       </a>
                     </td>
                     <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">{{ n.n1_chi | number: "1.0-2" }}° / {{ n.n1_glycosidic_bond }}</td>
                     <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">{{ n.n2_chi | number: "1.0-2" }}° / {{ n.n2_glycosidic_bond }}</td>
                     <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">{{ n.n3_chi | number: "1.0-2" }}° / {{ n.n3_glycosidic_bond }}</td>
-                    <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">{{ n.n4_chi }}° / {{ n.n4_glycosidic_bond }}</td>
+                    <td class="fiveColumnsStyle" style="text-align: center; vertical-align: middle">{{ n.n4_chi | number: "1.0-2" }}° / {{ n.n4_glycosidic_bond }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -259,14 +259,29 @@
           <mat-card-content>
             <div class="lists">
               <div class="list">
-                <p>
-                  Number of quadruplexes in this structure: <b>{{ data.quadruplexesInTheSamePdb.length + 1 }}</b>
-                </p>
-              </div>
-              <div class="list">
-                <p>
-                  Other quadruplexes in this structure: <a *ngFor="let q of data.quadruplexesInTheSamePdb" [routerLink]="['/quadruplex', q]">Q{{ q }} </a> <a *ngIf="data.quadruplexesInTheSamePdb.length == 0">-</a>
-                </p>
+                <h5>Structure tree:</h5>
+                <div *ngIf="!structureTree">-</div>
+                <div *ngIf="structureTree" class="structure-tree">
+                  <div class="tree-header">
+                    {{ structureTree.pdbId }} (assembly {{ structureTree.assemblyId }})
+                  </div>
+                  <div *ngFor="let quad of structureTree.quadruplexes" class="tree-node">
+                    <div class="tree-quad" [class.current]="quad.isCurrent">
+                      <a class="hasTooltip" [routerLink]="['/quadruplex', quad.id]">
+                        Q{{ quad.id }}
+                        <span *ngIf="quad.public_id"><img src="static/pymol/{{ quad.public_id }}.png" width="160" height="120" alt="" /></span>
+                      </a>
+                      <span *ngIf="quad.isCurrent">(current)</span>
+                    </div>
+                    <div class="tree-tetrads">
+                      <span *ngIf="quad.tetrads.length == 0">No tetrads listed</span>
+                      <a *ngFor="let t of quad.tetrads" class="hasTooltip" [routerLink]="['/tetrad', t.id]">
+                        T{{ t.id }}
+                        <span *ngIf="t.public_id"><img src="static/pymol/{{ t.public_id }}.png" width="100" height="100" alt="" /></span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </mat-card-content>

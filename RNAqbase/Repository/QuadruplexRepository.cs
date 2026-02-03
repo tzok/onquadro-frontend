@@ -40,6 +40,24 @@ namespace RNAqbase.Repository
 			}
 		}
 
+		public async Task<IEnumerable<QuadruplexSummary>> GetQuadruplexSummariesByPdbId(int pdbId)
+		{
+			using (var connection = Connection)
+			{
+				connection.Open();
+				return await connection.QueryAsync<QuadruplexSummary>
+				(@"
+					SELECT DISTINCT(q.id) as Id,
+						q.public_id as Public_id
+					FROM quadruplex q
+						JOIN tetrad t on t.quadruplex_id = q.id
+						JOIN nucleotide n1 on t.nt1_id = n1.id
+					WHERE n1.pdb_id = @PdbId
+					ORDER BY q.id;",
+					new { PdbId = pdbId });
+			}
+		}
+
 		public async Task<Quadruplex> GetQuadruplexById(int id)
 		{
 			using (var connection = Connection)
@@ -50,9 +68,12 @@ namespace RNAqbase.Repository
 						@"
 						SELECT DISTINCT ON (q.id)
 							q.id AS Id,
+							q.public_id AS Public_id,
+							q.basename AS Basename,
 							CONCAT(q.onzm, q.subtype) AS OnzmClass,
 						   	p.title as Title,
 							p.identifier AS PdbIdentifier,
+							MAX(p.public_id) AS Pdb_public_id,
 						    q.loop_class as LoopTopology,
 							STRING_AGG(DISTINCT(qg.gba_quadruplex_class)::text,', ') AS TetradCombination,
 						    to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
@@ -106,11 +127,13 @@ namespace RNAqbase.Repository
 	@"
 						SELECT
 							MAX(q.id) AS Id,
+							MAX(q.public_id) AS Public_id,
 							q.loop_class as LoopTopology,
 							STRING_AGG(DISTINCT(qg.gba_quadruplex_class)::text,', ') AS TetradCombination,
 							CONCAT(MAX(q.onzm), MAX(q.subtype)) AS OnzmClass,
 							to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 							MAX(p.identifier) AS PdbId,
+							MAX(p.public_id) AS Pdb_public_id,
 							string_agg(DISTINCT(ion.name)::text, ', ') as Ion,
 						    string_agg(DISTINCT(ion.charge)::text, ', ') as Ion_charge,  
 							MAX(p.assembly) AS AssemblyId,
@@ -169,7 +192,9 @@ namespace RNAqbase.Repository
 						@"
 						SELECT
 						string_agg(CAST(q.id AS TEXT), ',') as Quadruplex_id,
+						string_agg(CAST(q.public_id AS TEXT), ',') as Quadruplex_public_ids,
 						p.identifier AS PdbId,
+						MAX(p.public_id) AS Pdb_public_id,
 						to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 						p.assembly AS AssemblyId,
 						MAX(q_view.molecule) AS Molecule,
@@ -197,8 +222,10 @@ namespace RNAqbase.Repository
 						@"
 						SELECT
 							MAX(q.id) AS Id,
+							MAX(q.public_id) AS Public_id,
 							CONCAT(MAX(q.onzm), MAX(q.subtype)) AS OnzmClass,
 							MAX(p.identifier) AS PdbIdentifier, 
+							MAX(p.public_id) AS Pdb_public_id,
 							to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 							MAX(n1.pdb_id) AS PdbId,
 							MAX(p.assembly) AS AssemblyId,
@@ -239,6 +266,7 @@ namespace RNAqbase.Repository
 						(@"
 						SELECT 
 						t.id as tetrad_id,
+						t.public_id as tetrad_public_id,
 						n1.chi as n1_chi, 
 						n2.chi as n2_chi, 
 						n3.chi as n3_chi,

@@ -39,12 +39,12 @@
                     <td style="text-align: center; vertical-align: middle" *ngIf="data.tetradsInTheSameQuadruplex.length == 0">-</td>
                     <td style="text-align: center; vertical-align: middle" *ngIf="data.tetradsInTheSameQuadruplex.length > 0">
                       <a class="hasTooltip" [routerLink]="['/quadruplex', data.quadruplexId.slice(1)]"
-                        >{{ data.quadruplexId }}<span><img src="static/pymol/{{ data.quadruplexId }}.png" width="200" height="150" alt="" /></span>
+                        >{{ data.quadruplexId }}<span><img src="static/pymol/{{ data.quadruplex_public_id }}.png" width="200" height="150" alt="" /></span>
                       </a>
                     </td>
                     <td style="text-align: center; vertical-align: middle">
                       <a class="hasTooltip" target="_blank" rel="noopener noreferrer" href="https://www.rcsb.org/structure/{{ data.pdbIdentifier }}"
-                        >{{ data.pdbIdentifier }}<span> <img src="static/pymol/{{ data.pdbIdentifier }}-assembly{{ data.assemblyId }}.png" width="200" height="150" alt="" /> </span>
+                        >{{ data.pdbIdentifier }}<span> <img src="static/pymol/{{ data.pdb_public_id }}.png" width="200" height="150" alt="" /> </span>
                       </a>
                     </td>
                     <td style="text-align: center; vertical-align: middle">{{ data.assemblyId }}</td>
@@ -65,26 +65,26 @@
           <mat-card-content>
             <div>
               <h5>2D structure (dot-bracket):</h5>
-              <p class="dotbracket">{{ data.dot_bracket }}</p>
+              <p class="dotbracket fixed-sequence" [style.--seq-chars]="sequenceLineLength" [innerText]="formatFixedWidth(data.dot_bracket)"></p>
             </div>
             <div style="margin-top: 30px">
               <div class="row">
                 <div class="column">
                   <button (click)="show2dStructure('varna')" title="Click to see 2D structure">
                     <div class="text">2D structure (classic diagram)</div>
-                    <figure><img src="static/varna/{{ data.id }}.svg" width="150" height="150" alt="varna" /></figure>
+                    <figure><img src="static/varna/{{ data.public_id }}.svg" width="150" height="150" alt="varna" /></figure>
                   </button>
                 </div>
                 <div class="column">
                   <button (click)="show2dStructure('rchie')" title="Click to see 2D structure">
                     <div class="text">2D structure (arc diagram)</div>
-                    <figure><img src="static/rchie/{{ data.id }}.svg" width="200" height="150" alt="r-chie" /></figure>
+                    <figure><img src="static/rchie/{{ data.public_id }}.svg" width="200" height="150" alt="r-chie" /></figure>
                   </button>
                 </div>
                 <div class="column">
                   <button (click)="show3dStructure()" title="Click to see 3D structure">
                     <div class="text">3D structure (all-atom/surface model)</div>
-                    <figure><img src="static/pymol/{{ data.id }}.png" width="200" height="150" alt="litemol" /></figure>
+                    <figure><img src="static/pymol/{{ data.public_id }}.png" width="200" height="150" alt="litemol" /></figure>
                   </button>
                 </div>
               </div>
@@ -154,31 +154,28 @@
           <mat-card-content>
             <div class="lists">
               <div class="list">
-                <p *ngIf="data.quadruplexId != '99999999'">
-                  Number of tetrads in this quadruplex: <b>{{ data.tetradsInTheSameQuadruplex.length + 1 }}</b>
-                </p>
-              </div>
-
-              <div class="list">
-                <p *ngIf="data.quadruplexId != '99999999'">
-                  Other tetrads in this quadruplex:
-                  <a *ngFor="let t of data.tetradsInTheSameQuadruplex" [routerLink]="['/tetrad', t]">T{{ t }} </a>
-                  <a *ngIf="data.tetradsInTheSameQuadruplex.length == 0">-</a>
-                </p>
-              </div>
-
-              <div class="lists">
-                <div class="list">
-                  <p>
-                    Number of tetrads in this structure: <b>{{ data.tetradsInTheSamePdb.length + 1 }}</b>
-                  </p>
-                </div>
-                <div class="list">
-                  <p>
-                    Other tetrads in this structure:
-                    <a *ngFor="let t of data.tetradsInTheSamePdb" [routerLink]="['/tetrad', t]">T{{ t }} </a>
-                    <a *ngIf="data.tetradsInTheSamePdb.length == 0">-</a>
-                  </p>
+                <h5>Structure tree:</h5>
+                <div *ngIf="!structureTree">-</div>
+                <div *ngIf="structureTree" class="structure-tree">
+                  <div class="tree-header">
+                    {{ structureTree.pdbId }} (assembly {{ structureTree.assemblyId }})
+                  </div>
+                  <div *ngFor="let quad of structureTree.quadruplexes" class="tree-node">
+                    <div class="tree-quad" [class.current]="quad.isCurrent">
+                      <a class="hasTooltip" [routerLink]="['/quadruplex', quad.id]">
+                        Q{{ quad.id }}
+                        <span *ngIf="quad.public_id"><img src="static/pymol/{{ quad.public_id }}.png" width="160" height="120" alt="" /></span>
+                      </a>
+                      <span *ngIf="quad.isCurrent">(current)</span>
+                    </div>
+                    <div class="tree-tetrads">
+                      <span *ngIf="quad.tetrads.length == 0">No tetrads listed</span>
+                      <a *ngFor="let t of quad.tetrads" class="hasTooltip" [routerLink]="['/tetrad', t.id]">
+                        T{{ t.id }}
+                        <span *ngIf="t.public_id"><img src="static/pymol/{{ t.public_id }}.png" width="100" height="100" alt="" /></span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

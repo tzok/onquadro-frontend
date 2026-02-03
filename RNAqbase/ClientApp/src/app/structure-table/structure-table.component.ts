@@ -54,6 +54,13 @@ export class StructureTableComponent implements OnInit {
           this.dataSource = new MatTableDataSource(result);
           for (let val of result) {
             val.quadruplex_id = Array.from(new Set(val.quadruplex_id.split(',')))
+            if (typeof val.quadruplex_public_ids === 'string') {
+              val.quadruplex_public_ids = Array.from(new Set(val.quadruplex_public_ids.split(',')));
+            }
+            if (!val.quadruplex_public_ids && typeof val.quadruplex_basenames === 'string') {
+              val.quadruplex_public_ids = Array.from(new Set(val.quadruplex_basenames.split(',')));
+            }
+            val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
           }
 
           this.csvData = JSON.parse(JSON.stringify(result));
@@ -164,7 +171,7 @@ export class StructureTableComponent implements OnInit {
     zip.file("structures" + ".csv", structures);
     if (this.checked) {
       data.forEach(row => {
-        this.http.get("/static/varna/" + row.pdbId + '-assembly' + row.assemblyId + ".svg", { responseType: "arraybuffer" })
+        this.http.get("/static/varna/" + row.pdb_public_id + ".svg", { responseType: "arraybuffer" })
           .subscribe(data => {
             zip.file("2d_structure_varna" + row.pdbId + ".svg", data);
 
@@ -197,10 +204,13 @@ export class StructureTableComponent implements OnInit {
 interface Structure {
   quadruplex_id: any;
   quadruplex_idetifier: any;
+  quadruplex_public_ids: any;
+  quadruplex_basenames?: any;
   pdbId: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   pdbDeposition: string;
   assemblyId: number;
   molecule: string;
   experiment: string;
 }
-

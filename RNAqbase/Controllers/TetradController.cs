@@ -72,6 +72,13 @@ namespace RNAqbase.Controllers
             return Ok(await repository.FindAllTetradsInTheSameHelix(id));
         }
 
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetTetradSummariesByPdbId(int pdbId)
+        {
+            if (pdbId == 0) return BadRequest();
+            return Ok(await repository.GetTetradSummariesByPdbId(pdbId));
+        }
+
         
         [HttpGet("[action]")]
         public async Task<IActionResult> GetCifFile(int tetradId)

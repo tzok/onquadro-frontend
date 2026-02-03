@@ -7,6 +7,7 @@ import { VisualizationDialogComponent } from '../visualization-dialog/visualizat
 import * as JSZip from 'jszip';
 import { DomSanitizer } from "@angular/platform-browser";
 import { saveAs } from "file-saver";
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-helix',
@@ -20,11 +21,16 @@ export class HelixComponent implements OnInit {
   _3d_layers;
   _2d_structure_varna;
   _2d_structure_rchie;
+  readonly sequenceLineLength = 60;
+  tetradPublicIdById = new Map<number, string>();
+  quadruplexPublicIdById = new Map<number, string>();
 
   data: HelixReference;
   tetrads: TetradReference[];
   tetradsInformation: TetradInformations[] = [];
   tetradsPairsInformation: TetradPairsInformations[] = [];
+  tetradsByQuadruplex: QuadruplexTetrads[] = [];
+  structureTree: StructureTree;
   quadruplexes: QuadruplexReference[];
   quadruplexInformation: QuadruplexReference[] = [];
   nucleotideChiValues: NucleotideChiValues[];
@@ -45,10 +51,19 @@ export class HelixComponent implements OnInit {
       this.helixId = +params.get('helixId');
       this.http.get<HelixReference>(this.baseUrl + 'api/Helix/GetHelixReferenceById?id=' + this.helixId).subscribe(result => {
         this.data = result;
+        this.data.public_id = this.data.public_id || this.data.basename;
+        this.data.pdb_public_id = this.data.pdb_public_id || this.data.pdb_basename;
         this.data.id = 'H' + this.data.id;
         this.data.sequence = this.truncate(this.data.sequence);
         this.http.get<TetradReference[]>(this.baseUrl + '' + 'api/Tetrad/GetListOfTetradsInHelix?id=' + '' + this.data.id.slice(1)).subscribe(result => {
           this.tetrads = result;
+          for (let val of result) {
+            val.public_id = val.public_id || val.basename;
+            val.quadruplex_public_id = val.quadruplex_public_id || val.quadruplex_basename;
+            if (val.public_id) {
+              this.tetradPublicIdById.set(val.id, val.public_id);
+            }
+          }
           for (let val of result) {
             if (val.tetrad2_id != 0) {
               let quadruplex = null;
@@ -57,7 +72,10 @@ export class HelixComponent implements OnInit {
               this.tetradsPairsInformation.push({
                 TetradId: 'T' + val.id,
                 TetradPairId: 'T' + val.tetrad2_id,
+                TetradPublicId: val.public_id,
+                TetradPairPublicId: this.tetradPublicIdById.get(val.tetrad2_id),
                 quadruplex_id: quadruplex,
+                QuadruplexPublicId: val.quadruplex_public_id,
                 twist: val.twist,
                 rise: val.rise,
                 direction: val.direction
@@ -73,14 +91,21 @@ export class HelixComponent implements OnInit {
               planarity: val.planarity
             });
           }
+          this.tetradsByQuadruplex = this.groupTetradsByQuadruplex(result);
         }, error => console.error(error));
 
         this.http.get<QuadruplexReference[]>(this.baseUrl + '' + 'api/Quadruplex/GetListOfQuadruplex?id=' + '' + this.data.id.slice(1)).subscribe(result => {
           this.quadruplexes = result;
+          const helixQuadruplexIds = (result || []).map(quadruplex => quadruplex.id);
           for (let val of result) {
             val.sequence = this.truncate(val.sequence);
+            val.public_id = val.public_id || val.basename;
+            if (val.public_id) {
+              this.quadruplexPublicIdById.set(val.id, val.public_id);
+            }
             this.quadruplexInformation.push({
               id: 'Q' + val.id,
+              public_id: val.public_id,
               pdbIdentifier: val.pdbIdentifier,
               assemblyId: val.assemblyId,
               molecule: val.molecule,
@@ -92,12 +117,35 @@ export class HelixComponent implements OnInit {
               onzmClass: val.onzmClass
             });
           }
+          for (let val of this.tetradsPairsInformation) {
+            if (val.quadruplex_id) {
+              const quadId = Number(val.quadruplex_id.slice(1));
+              val.QuadruplexPublicId = this.quadruplexPublicIdById.get(quadId);
+            }
+          }
+          for (let tetrad of this.tetrads) {
+            if (!tetrad.quadruplex_public_id) {
+              tetrad.quadruplex_public_id = this.quadruplexPublicIdById.get(tetrad.quadruplex_id);
+            }
+          }
+
+          const quadSummaries$ = this.http.get<QuadruplexSummary[]>(
+            this.baseUrl + 'api/Quadruplex/GetQuadruplexSummariesByPdbId?pdbId=' + this.data.pdbId
+          );
+          const tetradSummaries$ = this.http.get<TetradSummary[]>(
+            this.baseUrl + 'api/Tetrad/GetTetradSummariesByPdbId?pdbId=' + this.data.pdbId
+          );
+          forkJoin([quadSummaries$, tetradSummaries$]).subscribe(([quadSummaries, tetradSummaries]) => {
+            this.buildStructureTree(quadSummaries || [], tetradSummaries || []);
+          }, error => console.error(error));
         }, error => console.error(error));
 
         this.http.get<NucleotideChiValues[]>(this.baseUrl + '' + 'api/Helix/GetNucleotideChiValues?id=' + '' + this.data.id.slice(1)).subscribe(result => {
           this.nucleotideChiValues = result;
           for (let val of this.nucleotideChiValues) {
+            const tetradId = val.tetrad_id;
             val.tetrad_id = 'T' + val.tetrad_id;
+            val.tetrad_public_id = this.tetradPublicIdById.get(tetradId);
           }
         }, error => console.error(error));
       }, error => console.error(error));
@@ -105,19 +153,19 @@ export class HelixComponent implements OnInit {
   }
 
   downloadZip(): void {
-    this.http.get("/static/pymol/" + this.data.id + ".png", { responseType: "arraybuffer" })
+    this.http.get("/static/pymol/" + this.data.public_id + ".png", { responseType: "arraybuffer" })
       .subscribe(data => {
         this._3d_structure = data;
 
-        this.http.get("/static/varna/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+        this.http.get("/static/varna/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
           .subscribe(data => {
             this._2d_structure_varna = data;
 
-            this.http.get("/static/rchie/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+            this.http.get("/static/rchie/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
               .subscribe(data => {
                 this._2d_structure_rchie = data;
 
-                this.http.get("/static/layers/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+                this.http.get("/static/layers/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
                   .subscribe(data => {
                     this._3d_layers = data;
 
@@ -171,8 +219,83 @@ export class HelixComponent implements OnInit {
 
   show2dStructure(type: any) {
     let dialogRef = this.dialog.open(VisualizationDialogComponent, {
-      data: { type: type, id: this.data.id },
+      data: { type: type, id: this.data.public_id, isHelix: true },
     });
+  }
+
+  formatFixedWidth(value: string, lineLength: number = this.sequenceLineLength): string {
+    if (!value) {
+      return '';
+    }
+    const length = Math.max(1, Math.floor(lineLength));
+    return value
+      .split(/\r?\n/)
+      .map(line => {
+        let result = '';
+        for (let i = 0; i < line.length; i += length) {
+          result += line.slice(i, i + length);
+          if (i + length < line.length) {
+            result += '\n';
+          }
+        }
+        return result;
+      })
+      .join('\n');
+  }
+
+  private buildStructureTree(quadruplexes: QuadruplexSummary[], tetrads: TetradSummary[]) {
+    const uniqueQuadruplexes = (quadruplexes || []).filter(quadruplex => quadruplex && quadruplex.id > 0);
+    if (uniqueQuadruplexes.length === 0) {
+      this.structureTree = null;
+      return;
+    }
+    const helixQuadruplexIds = new Set((this.quadruplexes || []).map(quadruplex => quadruplex.id));
+    const quadPublicIds = new Map<number, string>();
+    for (let quad of uniqueQuadruplexes) {
+      quadPublicIds.set(quad.id, quad.public_id || quad.basename);
+    }
+    const tetradsByQuad = new Map<number, TetradNode[]>();
+    for (let tetrad of tetrads || []) {
+      if (!tetradsByQuad.has(tetrad.quadruplex_id)) {
+        tetradsByQuad.set(tetrad.quadruplex_id, []);
+      }
+      tetradsByQuad.get(tetrad.quadruplex_id).push({
+        id: tetrad.id,
+        public_id: tetrad.public_id || tetrad.basename
+      });
+    }
+    tetradsByQuad.forEach((quadTetrads, quadId) => {
+      quadTetrads.sort((a, b) => a.id - b.id);
+      tetradsByQuad.set(quadId, quadTetrads);
+    });
+    this.structureTree = {
+      pdbId: this.data.pdbIdentifier,
+      assemblyId: this.data.assemblyId,
+      quadruplexes: uniqueQuadruplexes
+        .sort((a, b) => a.id - b.id)
+        .map(quadruplex => ({
+          id: quadruplex.id,
+          public_id: quadPublicIds.get(quadruplex.id),
+          isInHelix: helixQuadruplexIds.has(quadruplex.id),
+          tetrads: tetradsByQuad.get(quadruplex.id) || []
+        }))
+    };
+  }
+
+  private groupTetradsByQuadruplex(tetrads: TetradReference[]): QuadruplexTetrads[] {
+    const map = new Map<number, number[]>();
+    for (let tetrad of tetrads || []) {
+      if (!map.has(tetrad.quadruplex_id)) {
+        map.set(tetrad.quadruplex_id, []);
+      }
+      map.get(tetrad.quadruplex_id).push(tetrad.id);
+    }
+    return Array.from(map.entries())
+      .map(([quadruplexId, tetradIds]) => ({
+        quadruplexId,
+        tetradIds: tetradIds.sort((a, b) => a - b)
+      }))
+      .sort((a, b) => a.quadruplexId - b.quadruplexId);
   }
 
   setTwoNumberDecimal(num) {
@@ -191,8 +314,12 @@ export class HelixComponent implements OnInit {
 
 interface HelixReference {
   id: string;
+  public_id: string;
+  basename?: string;
   pdbId: string;
   pdbIdentifier: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   title: string;
   assemblyId: number;
   molecule: string;
@@ -206,6 +333,8 @@ interface HelixReference {
 
 interface QuadruplexReference {
   id: any;
+  public_id: string;
+  basename?: string;
   pdbIdentifier: string;
   assemblyId: number;
   molecule: string;
@@ -219,8 +348,12 @@ interface QuadruplexReference {
 
 interface TetradReference {
   id: any;
+  public_id: string;
+  basename?: string;
   quadruplex_id: any;
   quadruplex_pair_id: any;
+  quadruplex_public_id: string;
+  quadruplex_basename?: string;
   sequence: string;
   onzClass: string;
   twist: number;
@@ -241,7 +374,10 @@ interface TetradInformations {
 interface TetradPairsInformations {
   TetradId: any;
   TetradPairId: any;
+  TetradPublicId: string;
+  TetradPairPublicId: string;
   quadruplex_id: any;
+  QuadruplexPublicId: string;
   twist: number;
   rise: number;
   direction: string;
@@ -249,6 +385,7 @@ interface TetradPairsInformations {
 
 interface NucleotideChiValues {
   tetrad_id: any;
+  tetrad_public_id: string;
   n1_chi: number;
   n1_glycosidic_bond: string;
   n2_chi: number;
@@ -257,4 +394,40 @@ interface NucleotideChiValues {
   n3_glycosidic_bond: string;
   n4_chi: number;
   n4_glycosidic_bond: string;
+}
+
+interface QuadruplexTetrads {
+  quadruplexId: number;
+  tetradIds: number[];
+}
+
+interface StructureTree {
+  pdbId: string;
+  assemblyId: number;
+  quadruplexes: StructureQuadruplex[];
+}
+
+interface StructureQuadruplex {
+  id: number;
+  public_id?: string;
+  isInHelix: boolean;
+  tetrads: TetradNode[];
+}
+
+interface TetradNode {
+  id: number;
+  public_id?: string;
+}
+
+interface QuadruplexSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+}
+
+interface TetradSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+  quadruplex_id: number;
 }

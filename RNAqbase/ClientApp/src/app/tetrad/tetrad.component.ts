@@ -7,6 +7,7 @@ import { VisualizationDialogComponent } from '../visualization-dialog/visualizat
 import * as JSZip from 'jszip';
 import { DomSanitizer } from "@angular/platform-browser";
 import { saveAs } from "file-saver";
+import { forkJoin } from 'rxjs';
 
 
 @Component({
@@ -19,11 +20,13 @@ export class TetradComponent implements OnInit {
   _3d_structure;
   _2d_structure_varna;
   _2d_structure_rchie;
+  readonly sequenceLineLength = 60;
   data: Tetrad;
   csvData: Tetrad;
   tetradNucleotides: TetradNucleotides;
   tetradNucleotidesTable: TetradNucleotidesTable[] = [];
   ions: Ions[] = []
+  structureTree: StructureTree;
   tetradId: number;
   sub;
 
@@ -39,9 +42,24 @@ export class TetradComponent implements OnInit {
       this.tetradId = +params.get('tetradId');
       this.http.get<Tetrad>(this.baseUrl + 'api/Tetrad/GetTetradById?id=' + this.tetradId).subscribe(result => {
         this.data = result;
+        this.data.public_id = this.data.public_id || this.data.basename;
+        this.data.quadruplex_public_id = this.data.quadruplex_public_id || this.data.quadruplex_basename;
+        this.data.pdb_public_id = this.data.pdb_public_id || this.data.pdb_basename;
         this.data.id = 'T' + this.data.id;
         this.data.quadruplexId = 'Q' + this.data.quadruplexId;
         this.csvData = JSON.parse(JSON.stringify(this.data));
+
+        if (this.data.quadruplexId != '99999999') {
+          const quadSummaries$ = this.http.get<QuadruplexSummary[]>(
+            this.baseUrl + 'api/Quadruplex/GetQuadruplexSummariesByPdbId?pdbId=' + this.data.pdbId
+          );
+          const tetradSummaries$ = this.http.get<TetradSummary[]>(
+            this.baseUrl + 'api/Tetrad/GetTetradSummariesByPdbId?pdbId=' + this.data.pdbId
+          );
+          forkJoin([quadSummaries$, tetradSummaries$]).subscribe(([quadSummaries, tetradSummaries]) => {
+            this.buildStructureTree(quadSummaries || [], tetradSummaries || []);
+          }, error => console.error(error));
+        }
 
         this.http.get<number[]>(this.baseUrl + 'api/Tetrad/GetOtherTetradsInTheSamePdb?tetradId=' + this.tetradId + '&pdbId=' + this.data.pdbId).subscribe(result => {
           if (result) {
@@ -121,9 +139,68 @@ export class TetradComponent implements OnInit {
     });
   }
 
+  private buildStructureTree(quadruplexes: QuadruplexSummary[], tetrads: TetradSummary[]) {
+    const uniqueQuadruplexes = (quadruplexes || []).filter(quadruplex => quadruplex && quadruplex.id > 0);
+    if (uniqueQuadruplexes.length === 0) {
+      this.structureTree = null;
+      return;
+    }
+    const currentQuadruplexId = Number(this.data.quadruplexId.slice(1));
+    const quadPublicIds = new Map<number, string>();
+    for (let quad of uniqueQuadruplexes) {
+      quadPublicIds.set(quad.id, quad.public_id || quad.basename);
+    }
+    const tetradsByQuad = new Map<number, TetradNode[]>();
+    for (let tetrad of tetrads || []) {
+      if (!tetradsByQuad.has(tetrad.quadruplex_id)) {
+        tetradsByQuad.set(tetrad.quadruplex_id, []);
+      }
+      tetradsByQuad.get(tetrad.quadruplex_id).push({
+        id: tetrad.id,
+        public_id: tetrad.public_id || tetrad.basename
+      });
+    }
+    tetradsByQuad.forEach((quadTetrads, quadId) => {
+      quadTetrads.sort((a, b) => a.id - b.id);
+      tetradsByQuad.set(quadId, quadTetrads);
+    });
+    this.structureTree = {
+      pdbId: this.data.pdbIdentifier,
+      assemblyId: this.data.assemblyId,
+      quadruplexes: uniqueQuadruplexes
+        .sort((a, b) => a.id - b.id)
+        .map(quadruplex => ({
+          id: quadruplex.id,
+          public_id: quadPublicIds.get(quadruplex.id),
+          isCurrent: quadruplex.id === currentQuadruplexId,
+          tetrads: tetradsByQuad.get(quadruplex.id) || []
+        }))
+    };
+  }
+
+  formatFixedWidth(value: string, lineLength: number = this.sequenceLineLength): string {
+    if (!value) {
+      return '';
+    }
+    const length = Math.max(1, Math.floor(lineLength));
+    return value
+      .split(/\r?\n/)
+      .map(line => {
+        let result = '';
+        for (let i = 0; i < line.length; i += length) {
+          result += line.slice(i, i + length);
+          if (i + length < line.length) {
+            result += '\n';
+          }
+        }
+        return result;
+      })
+      .join('\n');
+  }
+
   show2dStructure(type: any) {
     let dialogRef = this.dialog.open(VisualizationDialogComponent, {
-      data: { type: type, id: this.data.id },
+      data: { type: type, id: this.data.public_id },
     });
   }
 
@@ -132,15 +209,15 @@ export class TetradComponent implements OnInit {
   };
 
   downloadZip(): void {
-    this.http.get("/static/pymol/" + this.data.id + ".png", { responseType: "arraybuffer" })
+    this.http.get("/static/pymol/" + this.data.public_id + ".png", { responseType: "arraybuffer" })
       .subscribe(data => {
         this._3d_structure = data;
 
-        this.http.get("/static/varna/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+        this.http.get("/static/varna/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
           .subscribe(data => {
             this._2d_structure_varna = data;
 
-            this.http.get("/static/rchie/" + this.data.id + ".svg", { responseType: "arraybuffer" })
+            this.http.get("/static/rchie/" + this.data.public_id + ".svg", { responseType: "arraybuffer" })
               .subscribe(data => {
                 this._2d_structure_rchie = data;
 
@@ -176,9 +253,15 @@ export class TetradComponent implements OnInit {
 
 interface Tetrad {
   id: any;
+  public_id: string;
+  basename?: string;
   quadruplexId: any;
+  quadruplex_public_id: string;
+  quadruplex_basename?: string;
   pdbId: number;
   pdbIdentifier: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   title: string;
   assemblyId: number;
   molecule: string;
@@ -219,10 +302,46 @@ interface TetradNucleotidesTable {
   glycosidic_bond: string;
 }
 
+interface TetradReference {
+  id: number;
+  public_id?: string;
+  basename?: string;
+}
+
+interface StructureTree {
+  pdbId: string;
+  assemblyId: number;
+  quadruplexes: StructureQuadruplex[];
+}
+
+interface StructureQuadruplex {
+  id: number;
+  public_id?: string;
+  isCurrent: boolean;
+  tetrads: TetradNode[];
+}
+
+interface TetradNode {
+  id: number;
+  public_id?: string;
+}
+
+interface QuadruplexSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+}
+
+interface TetradSummary {
+  id: number;
+  public_id?: string;
+  basename?: string;
+  quadruplex_id: number;
+}
+
 interface Ions {
   ion: string;
   ion_charge: string;
   symbol: string;
   full_name: string;
 }
-

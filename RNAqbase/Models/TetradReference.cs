@@ -8,6 +8,7 @@ namespace RNAqbase.Models
 	public class TetradReference : BaseEntity
 	{
 		public int Id { get; set; }
+		public string Public_id { get; set; }
 		public string Sequence { get; set; }
 		public string OnzClass { get; set; }
 		public string Dot_bracket { get; set; }
@@ -18,5 +19,6 @@ namespace RNAqbase.Models
         public string Direction { get; set; }
         public int Quadruplex_id { get; set; }
         public int Quadruplex_pair_id { get; set; }
+        public string Quadruplex_public_id { get; set; }
 	}
 }

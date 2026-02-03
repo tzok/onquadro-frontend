@@ -43,6 +43,14 @@ export class HeliceComponent implements OnInit {
       for (let val of result) {
         val.quadruplexesIds = Array.from(new Set(val.quadruplexesIds.split(',')))
         val.sequence = this.truncate(val.sequence);
+        val.public_id = val.public_id || val.basename;
+        val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
+        if (typeof val.quadruplexesPublicIds === 'string') {
+          val.quadruplexesPublicIds = Array.from(new Set(val.quadruplexesPublicIds.split(',')));
+        }
+        if (!val.quadruplexesPublicIds && typeof val.quadruplexesBasenames === 'string') {
+          val.quadruplexesPublicIds = Array.from(new Set(val.quadruplexesBasenames.split(',')));
+        }
       }
 
       this.csvData = JSON.parse(JSON.stringify(result));
@@ -158,8 +166,14 @@ export class HeliceComponent implements OnInit {
 interface Helix {
   id: string;
   helix_id: any;
+  public_id: string;
+  basename?: string;
   quadruplexesIds: any;
+  quadruplexesPublicIds: any;
+  quadruplexesBasenames?: any;
   pdbId: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   assemblyId: number;
   molecule: string;
   experiment: string;

@@ -37,12 +37,18 @@ export class TetradTabelComponent implements OnInit {
       this.csvData = JSON.parse(JSON.stringify(result));
 
       for (let val of this.csvData) {
+        val.public_id = val.public_id || val.basename;
+        val.quadruplex_public_id = val.quadruplex_public_id || val.quadruplex_basename;
+        val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
         val.id = 'T' + val.id.toString();
         val.quadruplexId = 'Q' + val.quadruplexId.toString();
       }
 
       this.dataSource = new MatTableDataSource(result);
       for (let val of result) {
+        val.public_id = val.public_id || val.basename;
+        val.quadruplex_public_id = val.quadruplex_public_id || val.quadruplex_basename;
+        val.pdb_public_id = val.pdb_public_id || val.pdb_basename;
         val.tetrad_id = val.id;
         val.quadruplex_id = val.quadruplexId;
         val.id = 'T' + val.id.toString();
@@ -132,8 +138,14 @@ export class TetradTabelComponent implements OnInit {
 
 interface Tetrad {
   id: any;
+  public_id: string;
+  basename?: string;
   quadruplexId: any;
+  quadruplex_public_id: string;
+  quadruplex_basename?: string;
   pdbId: string;
+  pdb_public_id: string;
+  pdb_basename?: string;
   assemblyId: number;
   molecule: string;
   experiment: string;

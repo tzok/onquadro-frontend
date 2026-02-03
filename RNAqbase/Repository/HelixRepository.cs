@@ -25,8 +25,12 @@ namespace RNAqbase.Repository
 						(@"
                         SELECT DISTINCT ON(h.id)
 						h.id AS Id,     
+						h.public_id AS Public_id,
+						h.basename AS Basename,
 						h.dot_bracket AS Dot_bracket,
 						p.identifier AS PdbIdentifier,
+						MAX(p.id) AS PdbId,
+						MAX(p.public_id) AS Pdb_public_id,
                         p.title AS Title,
 						to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 						p.assembly AS AssemblyId,
@@ -68,6 +72,7 @@ namespace RNAqbase.Repository
 				return await connection.QueryAsync<NucleotidesChiValues>(
 						(@"
 						SELECT t.id as tetrad_id,
+						t.public_id as tetrad_public_id,
 						n1.chi as n1_chi, 
 						n2.chi as n2_chi, 
 						n3.chi as n3_chi,
@@ -96,8 +101,11 @@ namespace RNAqbase.Repository
 				return (await connection.QueryAsync<HelixTable>(
 						@"SELECT DISTINCT ON(h.id)
 							h.id AS Id,       
-    						string_agg(DISTINCT(q.id)::text, ',') as QuadruplexesIds,
+	    					h.public_id AS Public_id,
+     						string_agg(DISTINCT(q.id)::text, ',') as QuadruplexesIds,
+	    						string_agg(DISTINCT(q.public_id)::text, ',') as QuadruplexesPublicIds,
 							p.identifier AS PdbId,
+							MAX(p.public_id) AS Pdb_public_id,
 							to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
 							p.assembly AS AssemblyId,
 							max(q_view.molecule) AS Molecule,
