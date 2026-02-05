@@ -21,6 +21,7 @@
     widget <- add_global_shim.function(widget)
     htmlwidgets::saveWidget(widget, file = file)
   }
+
   # FUNCTION FOR DATA PREPARATION
   prepere_data_for_plot.function <- function(table) {
     
@@ -292,7 +293,7 @@
   	count(*) as Total,
   	loop_class
   FROM quadruplex 
-  where loop_class not in ('n/a') 
+  where loop_class IS NOT NULL
   group by loop_class
   UNION
   SELECT
@@ -300,9 +301,27 @@
   	q.loop_class as loop_class
   FROM QUADRUPLEX q
   JOIN QUADRUPLEX_VIEW q_view ON q.id = q_view.id
-  where q.loop_class in ('n/a') and q_view.chains in ('1')
+  where q.loop_class IS NOT NULL and q_view.chains in ('1')
   GROUP BY q.loop_class, q_view.chains"
-  
+
+  Query_loop_progression_da_silva <-
+    "SELECT
+  	count(*) as Total,
+  	loop_progression as loop_progression_da_silva
+  FROM quadruplex 
+  where loop_progression IS NOT NULL
+  group by loop_progression"
+
+  Query_experimental_method <-
+    "SELECT DISTINCT experiment as experimental_method, COUNT(*) as total FROM PDB GROUP BY experiment"
+
+  Query_onzm <-
+    "SELECT DISTINCT CASE
+      WHEN SUBSTRING(onzm::TEXT, 2, 1) = 'a' THEN 'antiparallel'
+      WHEN SUBSTRING(onzm::TEXT, 2, 1) = 'p' THEN 'parallel'
+      ELSE 'hybrid' END AS onzm,
+      COUNT(*) as total FROM quadruplex GROUP BY SUBSTRING(onzm::TEXT, 2, 1)"
+
   Query_planarity_rise_twist_values <-
     "SELECT 
   	t.planarity_deviation as planarity,
@@ -388,7 +407,7 @@
   number_of_tetrads_by_sequence_and_molecule_type$cleaned_labels <- toupper(number_of_tetrads_by_sequence_and_molecule_type$cleaned_labels)
   #plot_ly(number_of_tetrads_by_sequence_and_molecule_type, ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents, values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_tetrads_by_sequence_and_molecule_type$colors)
   p <- plot_ly(number_of_tetrads_by_sequence_and_molecule_type,
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_tetrads_by_sequence_and_molecule_type$colors)
   save_plot_widget.function(p, file = "number_of_tetrads_by_sequence_and_molecule_type.html")
@@ -408,7 +427,7 @@
   
   #plot_ly(number_of_quadruplexes_composed_of_2_12_tetrads, ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents, values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_quadruplexes_composed_of_2_12_tetrads$colors)
   p <- plot_ly(number_of_quadruplexes_composed_of_2_12_tetrads, 
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_quadruplexes_composed_of_2_12_tetrads$colors)
   save_plot_widget.function(p, file = "number_of_quadruplexes_composed_of_2_12_tetrads.html")
@@ -434,7 +453,7 @@
   
   #plot_ly(number_of_uni_bi_and_tetramolecular_quadruplexes, ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents, values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_uni_bi_and_tetramolecular_quadruplexes$colors)
   p <- plot_ly(number_of_uni_bi_and_tetramolecular_quadruplexes,
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = number_of_uni_bi_and_tetramolecular_quadruplexes$colors)
   save_plot_widget.function(p, file = "number_of_uni_bi_and_tetramolecular_quadruplexes.html")
@@ -473,7 +492,7 @@
   #plot_ly(ONZM_class_coverage_by_unimolecular_quadruplexes, ids = ~cleaned_ids, labels = ~cleaned_labels, parents = ~cleaned_parents, values = ~cleaned_values, type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_unimolecular_quadruplexes$colors)
   p <- plot_ly(ONZM_class_coverage_by_unimolecular_quadruplexes, ids = ~cleaned_ids, 
                labels = ~cleaned_labels, parents = ~cleaned_parents,values = ~cleaned_values,
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_unimolecular_quadruplexes$colors)
   save_plot_widget.function(p, file = "ONZM_class_coverage_by_unimolecular_quadruplexes.html")
@@ -501,7 +520,7 @@
   p <- plot_ly(ONZM_class_coverage_by_bimolecular_quadruplexes, 
                ids = ~cleaned_ids, labels = ~cleaned_labels,
                parents = ~cleaned_parents,values = ~cleaned_values,
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                type = 'sunburst', branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_bimolecular_quadruplexes$colors)
   save_plot_widget.function(p, file = "ONZM_class_coverage_by_bimolecular_quadruplexes.html")
@@ -532,7 +551,7 @@
                parents = ~cleaned_parents,
                values = ~cleaned_values,
                type = 'sunburst',
-               texttemplate = "%{label}: %{value:,s} <br>(%{percentParent})",
+               texttemplate = "%{label}: %{value} <br>(%{percentParent})",
                hovertemplate = "Label: %{label} <br>Count: %{value} </br>Percentage: %{percentParent:%}<extra></extra> ",
                branchvalues = 'total') %>% layout(colorway = ONZM_class_coverage_by_tetramolecular_quadruplexes$colors)
   
@@ -625,7 +644,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(gba_da_silva, labels = ~gba_quadruplex_class, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -638,7 +657,7 @@
                         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   
   p <- plot_ly(gba_da_silva, labels = ~gba_quadruplex_class, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "GBA_da_Silva_treemap.html")
@@ -651,7 +670,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(loop_da_silva, labels = ~loop_class, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -664,12 +683,69 @@
   
   
   p <- plot_ly(loop_da_silva, labels = ~loop_class, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "loop_da_Silva_treemap.html")
   save_plot_widget.function(fig, file = "loop_da_Silva_pie.html")
-  
+
+  #LOOP PROGRESSION DA SILVA
+  loop_progression_da_silva <- dbGetQuery(con, Query_loop_progression_da_silva)
+
+  colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+  fig <- plot_ly(loop_progression_da_silva, labels = ~loop_progression_da_silva, values = ~total, type = 'pie',
+                 textposition = 'inside',
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
+                 insidetextfont = list(color = '#FFFFFF'),
+                 hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
+                 text = ~paste(total),
+                 marker = list(colors = colors,
+                               line = list(color = '#FFFFFF', width = 1)),
+                 showlegend = FALSE)
+  fig <- fig %>% layout(title = '',
+                        xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                        yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+  save_plot_widget.function(fig, file = "loop_progression_da_silva.html")
+
+  #EXPERIMENTAL METHOD
+  experimental_method <- dbGetQuery(con, Query_experimental_method)
+
+  colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+  fig <- plot_ly(experimental_method, labels = ~experimental_method, values = ~total, type = 'pie',
+                 textposition = 'inside',
+                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 insidetextfont = list(color = '#FFFFFF'),
+                 hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
+                 text = ~paste(total),
+                 marker = list(colors = colors,
+                               line = list(color = '#FFFFFF', width = 1)),
+                 showlegend = FALSE)
+  fig <- fig %>% layout(title = '',
+                        xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                        yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+  save_plot_widget.function(fig, file = "experimental_method.html")
+
+  #ONZM
+  onzm_data <- dbGetQuery(con, Query_onzm)
+
+  colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+  fig <- plot_ly(onzm_data, labels = ~onzm, values = ~total, type = 'pie',
+                 textposition = 'inside',
+                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 insidetextfont = list(color = '#FFFFFF'),
+                 hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
+                 text = ~paste(total),
+                 marker = list(colors = colors,
+                               line = list(color = '#FFFFFF', width = 1)),
+                 showlegend = FALSE)
+  fig <- fig %>% layout(title = '',
+                        xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                        yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+  save_plot_widget.function(fig, file = "onzm.html")
+
   #RISE TWIST PLANARITY
   rise_twist_planarity <- dbGetQuery(con, Query_planarity_rise_twist_values)
   
@@ -885,7 +961,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_o_plus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -898,7 +974,7 @@
   
   
   p <- plot_ly(ion_o_plus, labels = ~ion, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_o_plus_treemap.html")
@@ -911,7 +987,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_o_minus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -924,7 +1000,7 @@
   
   
   p <- plot_ly(ion_o_minus, labels = ~ion, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_o_minus_treemap.html")
@@ -937,7 +1013,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_n_plus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -950,7 +1026,7 @@
   
   
   p <- plot_ly(ion_n_plus, labels = ~ion, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_n_plus_treemap.html")
@@ -963,7 +1039,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_n_minus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -976,7 +1052,7 @@
   
   
   p <- plot_ly(ion_n_minus, labels = ~ion, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_n_minus_treemap.html")
@@ -990,7 +1066,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_z_plus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -1003,7 +1079,7 @@
   
   
   p <- plot_ly(ion_z_plus, labels = ~ion, values = ~total, type = 'treemap',  parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_ion_z_plus_treemap.html")
@@ -1016,7 +1092,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(ion_z_minus, labels = ~ion, values = ~total, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(total),
@@ -1032,7 +1108,7 @@
                values = ~total,
                type = 'treemap',
                parents = NA,
-               texttemplate = "%{label}: %{value:,s}",
+               texttemplate = "%{label}: %{value}",
                hovertemplate = "Label: %{label} <br>Count: %{value}<extra></extra>")
   
   save_plot_widget.function(p, file = "ion_ion_z_minus_treemap.html")
@@ -1050,7 +1126,7 @@
   colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
   fig <- plot_ly(loop_length, labels = ~loop_length, values = ~count, type = 'pie',
                  textposition = 'inside',
-                 texttemplate = "%{label}: %{value:,s} <br>(%{percent})",
+                 texttemplate = "%{label}: %{value} <br>(%{percent})",
                  insidetextfont = list(color = '#FFFFFF'),
                  hovertemplate = "Label: %{label} <br>Count: %{text} </br>Percentage: %{percent}<extra></extra> ",
                  text = ~paste(count),

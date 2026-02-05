@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -440,7 +440,7 @@ WHERE chains = 4;")).ToList();
 				connection.Open();
 
 				return (await connection.QueryAsync<Statistics>(
-					@"SELECT DISTINCT q.loop_progression AS Type, COUNT(*) as Total
+					@"SELECT DISTINCT q.loop_progression AS loop_progression_da_silva, COUNT(*) as Total
 							FROM tetrad t
 							JOIN quadruplex q on q.id = t.quadruplex_id
 							WHERE q.loop_progression IS NOT NULL
