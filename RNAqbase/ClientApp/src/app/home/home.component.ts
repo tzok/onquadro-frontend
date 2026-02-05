@@ -3,7 +3,7 @@ import { ChartDataSets } from "chart.js";
 import { Color } from "ng2-charts";
 import { ActivatedRoute, Router } from "@angular/router";
 import * as pluginDataLabels from "chartjs-plugin-datalabels";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { formatDate } from "@angular/common";
 
 @Component({
@@ -54,12 +54,18 @@ export class HomeComponent implements OnInit {
 
   public barChartColors: Color[] = [{ backgroundColor: "#45A29E" }, { backgroundColor: "#57dbd5" }];
 
+  private noCacheHeaders = new HttpHeaders({
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  });
+
   constructor(private http: HttpClient, @Inject("BASE_URL") private baseUrl: string, private activatedRoute: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.sub = this.activatedRoute.paramMap.subscribe(
       (params) => {
-        this.http.get<updateInformations>(this.baseUrl + "api/Statistics/GetUpdate").subscribe(
+        this.http.get<updateInformations>(this.baseUrl + "api/Statistics/GetUpdate", { headers: this.noCacheHeaders }).subscribe(
           (result) => {
             this.update = result;
 
@@ -82,7 +88,7 @@ export class HomeComponent implements OnInit {
             }
             this.update.recent = formatDate(date, "yyyy-MM-dd", "en_US");
 
-            this.http.get<componentsCount>(this.baseUrl + "api/Statistics/GetCount").subscribe(
+            this.http.get<componentsCount>(this.baseUrl + "api/Statistics/GetCount", { headers: this.noCacheHeaders }).subscribe(
               (result) => {
                 this.count = result;
                 this.barChartData = [{ data: [this.count.tetradCount, this.count.quadruplexCount, this.count.helixCount, this.count.structureCount] }];
