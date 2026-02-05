@@ -25,6 +25,11 @@ export class HomeComponent implements OnInit {
   public barChartOptions: any = {
     responsive: true,
     legend: { display: false },
+    layout: {
+      padding: {
+        top: 30,
+      },
+    },
     scales: {
       yAxes: [
         {
