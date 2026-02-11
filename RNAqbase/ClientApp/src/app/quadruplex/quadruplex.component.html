@@ -265,6 +265,32 @@
                   <div class="tree-header">
                     {{ structureTree.pdbId }} (assembly {{ structureTree.assemblyId }})
                   </div>
+                  <div *ngFor="let helix of structureTree.helices" class="tree-node">
+                    <div class="tree-helix">
+                      <a class="hasTooltip" [routerLink]="['/helices', helix.id]">
+                        H{{ helix.id }}
+                        <span *ngIf="helix.public_id"><img src="static/pymol/{{ helix.public_id }}.png" width="160" height="120" alt="" /></span>
+                      </a>
+                    </div>
+                    <div class="tree-helix-children">
+                      <div *ngFor="let quad of helix.quadruplexes" class="tree-node">
+                        <div class="tree-quad" [class.current]="quad.isCurrent">
+                          <a class="hasTooltip" [routerLink]="['/quadruplex', quad.id]">
+                            Q{{ quad.id }}
+                            <span *ngIf="quad.public_id"><img src="static/pymol/{{ quad.public_id }}.png" width="160" height="120" alt="" /></span>
+                          </a>
+                          <span *ngIf="quad.isCurrent">(current)</span>
+                        </div>
+                        <div class="tree-tetrads">
+                          <span *ngIf="quad.tetrads.length == 0">No tetrads listed</span>
+                          <a *ngFor="let t of quad.tetrads" class="hasTooltip" [routerLink]="['/tetrad', t.id]">
+                            T{{ t.id }}
+                            <span *ngIf="t.public_id"><img src="static/pymol/{{ t.public_id }}.png" width="100" height="100" alt="" /></span>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div *ngFor="let quad of structureTree.quadruplexes" class="tree-node">
                     <div class="tree-quad" [class.current]="quad.isCurrent">
                       <a class="hasTooltip" [routerLink]="['/quadruplex', quad.id]">

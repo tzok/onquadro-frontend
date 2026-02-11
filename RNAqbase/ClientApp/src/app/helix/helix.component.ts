@@ -135,8 +135,11 @@ export class HelixComponent implements OnInit {
           const tetradSummaries$ = this.http.get<TetradSummary[]>(
             this.baseUrl + 'api/Tetrad/GetTetradSummariesByPdbId?pdbId=' + this.data.pdbId
           );
-          forkJoin([quadSummaries$, tetradSummaries$]).subscribe(([quadSummaries, tetradSummaries]) => {
-            this.buildStructureTree(quadSummaries || [], tetradSummaries || []);
+          const helixSummaries$ = this.http.get<HelixSummary[]>(
+            this.baseUrl + 'api/Helix/GetHelixSummariesByPdbId?pdbId=' + this.data.pdbId
+          );
+          forkJoin([quadSummaries$, tetradSummaries$, helixSummaries$]).subscribe(([quadSummaries, tetradSummaries, helixSummaries]) => {
+            this.buildStructureTree(quadSummaries || [], tetradSummaries || [], helixSummaries || []);
           }, error => console.error(error));
         }, error => console.error(error));
 
@@ -243,7 +246,7 @@ export class HelixComponent implements OnInit {
       .join('\n');
   }
 
-  private buildStructureTree(quadruplexes: QuadruplexSummary[], tetrads: TetradSummary[]) {
+  private buildStructureTree(quadruplexes: QuadruplexSummary[], tetrads: TetradSummary[], helixSummaries: HelixSummary[]) {
     const uniqueQuadruplexes = (quadruplexes || []).filter(quadruplex => quadruplex && quadruplex.id > 0);
     if (uniqueQuadruplexes.length === 0) {
       this.structureTree = null;
@@ -268,17 +271,52 @@ export class HelixComponent implements OnInit {
       quadTetrads.sort((a, b) => a.id - b.id);
       tetradsByQuad.set(quadId, quadTetrads);
     });
+
+    const buildQuadNode = (quadruplex: QuadruplexSummary): StructureQuadruplex => ({
+      id: quadruplex.id,
+      public_id: quadPublicIds.get(quadruplex.id),
+      isInHelix: helixQuadruplexIds.has(quadruplex.id),
+      tetrads: tetradsByQuad.get(quadruplex.id) || []
+    });
+
+    // Build helix nodes from helix summaries
+    const helixMap = new Map<number, { public_id: string; quadruplex_ids: Set<number> }>();
+    for (let hs of helixSummaries || []) {
+      if (!helixMap.has(hs.id)) {
+        helixMap.set(hs.id, { public_id: hs.public_id, quadruplex_ids: new Set() });
+      }
+      helixMap.get(hs.id).quadruplex_ids.add(hs.quadruplex_id);
+    }
+
+    const quadruplexIdsInHelices = new Set<number>();
+    const helices: HelixNode[] = [];
+    for (let [helixId, helixData] of Array.from(helixMap.entries()).sort((a, b) => a[0] - b[0])) {
+      const helixQuads = uniqueQuadruplexes
+        .filter(q => helixData.quadruplex_ids.has(q.id))
+        .sort((a, b) => a.id - b.id)
+        .map(q => buildQuadNode(q));
+      Array.from(helixData.quadruplex_ids).forEach(qId => {
+        quadruplexIdsInHelices.add(qId);
+      });
+      helices.push({
+        id: helixId,
+        public_id: helixData.public_id,
+        isCurrent: helixId === this.helixId,
+        quadruplexes: helixQuads
+      });
+    }
+
+    // Standalone quadruplexes not in any helix
+    const standaloneQuadruplexes = uniqueQuadruplexes
+      .filter(q => !quadruplexIdsInHelices.has(q.id))
+      .sort((a, b) => a.id - b.id)
+      .map(q => buildQuadNode(q));
+
     this.structureTree = {
       pdbId: this.data.pdbIdentifier,
       assemblyId: this.data.assemblyId,
-      quadruplexes: uniqueQuadruplexes
-        .sort((a, b) => a.id - b.id)
-        .map(quadruplex => ({
-          id: quadruplex.id,
-          public_id: quadPublicIds.get(quadruplex.id),
-          isInHelix: helixQuadruplexIds.has(quadruplex.id),
-          tetrads: tetradsByQuad.get(quadruplex.id) || []
-        }))
+      helices: helices,
+      quadruplexes: standaloneQuadruplexes
     };
   }
 
@@ -404,6 +442,14 @@ interface QuadruplexTetrads {
 interface StructureTree {
   pdbId: string;
   assemblyId: number;
+  helices: HelixNode[];
+  quadruplexes: StructureQuadruplex[];
+}
+
+interface HelixNode {
+  id: number;
+  public_id?: string;
+  isCurrent: boolean;
   quadruplexes: StructureQuadruplex[];
 }
 
@@ -429,5 +475,11 @@ interface TetradSummary {
   id: number;
   public_id?: string;
   basename?: string;
+  quadruplex_id: number;
+}
+
+interface HelixSummary {
+  id: number;
+  public_id?: string;
   quadruplex_id: number;
 }

@@ -188,6 +188,14 @@ button:focus {
   margin-left: 16px;
 }
 
+.tree-helix {
+  font-weight: bold;
+}
+
+.tree-helix-children {
+  margin-left: 16px;
+}
+
 .saveDataButton {
   text-align: right;
 }

@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RNAqbase.Services;
 
@@ -40,6 +40,12 @@ namespace RNAqbase.Controllers
         public async Task<IActionResult> GetNucleotideChiValues(int id)
         {
 	        return Ok(await helixService.GetNucleotideChiValues(id));
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetHelixSummariesByPdbId(int pdbId)
+        {
+            return Ok(await helixService.GetHelixSummariesByPdbId(pdbId));
         }
     }
 }

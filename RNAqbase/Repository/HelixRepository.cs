@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -133,6 +133,25 @@ namespace RNAqbase.Repository
 						GROUP BY h.id, p.identifier, n1.pdb_id, p.assembly, n1.molecule, p.experiment
 						order by h.id;
                         ")).ToList();
+			}
+		}
+
+		public async Task<IEnumerable<HelixSummary>> GetHelixSummariesByPdbId(int pdbId)
+		{
+			using (var connection = Connection)
+			{
+				connection.Open();
+				return await connection.QueryAsync<HelixSummary>
+				(@"
+					SELECT
+						h.id AS Id,
+						h.public_id AS Public_id,
+						hq.quadruplex_id AS Quadruplex_id
+					FROM helix h
+						JOIN helix_quadruplex hq ON h.id = hq.helix_id
+					WHERE h.pdb_id = @PdbId
+					ORDER BY h.id, hq.quadruplex_id;",
+					new { PdbId = pdbId });
 			}
 		}
 

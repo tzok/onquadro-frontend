@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -52,6 +52,9 @@ namespace RNAqbase.Services
         
         public async Task<IEnumerable<NucleotidesChiValues>> GetNucleotideChiValues(int id) =>
 	        (await helixRepository.GetNucleotideChiValues(id)).ToList();
+
+        public async Task<IEnumerable<HelixSummary>> GetHelixSummariesByPdbId(int pdbId) =>
+	        await helixRepository.GetHelixSummariesByPdbId(pdbId);
 
     }
 

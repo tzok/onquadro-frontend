@@ -181,6 +181,18 @@ a.disabled {
   color: #2c3e50;
 }
 
+.tree-helix {
+  font-weight: bold;
+}
+
+.tree-helix.current {
+  color: #2c3e50;
+}
+
+.tree-helix-children {
+  margin-left: 16px;
+}
+
 .tree-tetrads {
   margin-left: 16px;
 }

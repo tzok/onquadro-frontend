@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +13,7 @@ namespace RNAqbase.Services
         Task<HelixReference> GetHelixReferenceById(int id);
         Task<MemoryStream> GetHelix3dVisualization(int id);
         Task<IEnumerable<NucleotidesChiValues>> GetNucleotideChiValues(int id);
+        Task<IEnumerable<HelixSummary>> GetHelixSummariesByPdbId(int pdbId);
 
 	}
 }
