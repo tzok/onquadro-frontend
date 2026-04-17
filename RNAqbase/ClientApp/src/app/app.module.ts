@@ -53,6 +53,9 @@ import { MatRadioModule } from '@angular/material/radio';
 import { SnackbarDuplicateCondComponent } from './snackbar-duplicate-cond/snackbar-duplicate-cond.component';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { SaveFileDialogComponent } from './save-file-dialog/save-file-dialog.component';
+import { SearchCriteriaBannerComponent } from './search-criteria-banner/search-criteria-banner.component';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @NgModule({
   declarations: [
@@ -90,7 +93,8 @@ import { SaveFileDialogComponent } from './save-file-dialog/save-file-dialog.com
     WebbaDaSilvaDialogComponent,
     DeleteButtonComponent,
     SnackbarDuplicateCondComponent,
-    SaveFileDialogComponent
+    SaveFileDialogComponent,
+    SearchCriteriaBannerComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -137,7 +141,9 @@ import { SaveFileDialogComponent } from './save-file-dialog/save-file-dialog.com
     CounterModule.forRoot(),
     MatTabsModule,
     MatButtonModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatChipsModule,
+    MatProgressSpinnerModule
   ],
   providers: [],
   bootstrap: [AppComponent],

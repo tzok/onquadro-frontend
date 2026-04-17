@@ -1,0 +1,19 @@
+<mat-card *ngIf="isVisible" class="search-criteria-banner">
+  <mat-card-content>
+    <div class="banner-header">
+      <span class="banner-title">Search criteria</span>
+      <button mat-button class="edit-search-button" (click)="editSearch()">Edit search</button>
+      <button mat-button class="clear-all-button" (click)="clearAll()">Clear all</button>
+    </div>
+    <mat-chip-list class="criteria-chips">
+      <ng-container *ngFor="let filter of activeFiltersList">
+        <mat-chip *ngFor="let cond of filter.conditions"
+                  (removed)="removeCondition(filter.attrID, cond.value)"
+                  class="criteria-chip">
+          <span class="chip-label">{{ filter.attrName }}:</span> {{ formatCondition(cond) }}
+          <mat-icon matChipRemove>cancel</mat-icon>
+        </mat-chip>
+      </ng-container>
+    </mat-chip-list>
+  </mat-card-content>
+</mat-card>

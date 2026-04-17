@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SelectionModel } from '@angular/cdk/collections';
 import { MatSelectChange } from "@angular/material/select";
 import { ActivatedRoute } from '@angular/router';
+import { SearchStateService } from '../search-state.service';
 
 @Component({
   selector: 'quadruplex-table',
@@ -17,6 +18,7 @@ export class QuadruplexTableComponent implements OnInit {
   rawResult: Quadruplex[] = [];
   areButtonsHidden: boolean = true;
   filteredDataLength = this.dataSource.data.length;
+  isLoading = false;
 
   @ViewChild(MatPaginator)
   paginator: MatPaginator;
@@ -35,31 +37,66 @@ export class QuadruplexTableComponent implements OnInit {
   ]
   value: any;
 
-  constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string, private route: ActivatedRoute) {
+  constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string, private route: ActivatedRoute, private searchState: SearchStateService) {
   }
 
   ngOnInit() {
     this.route.queryParamMap.subscribe(params => {
       if (params.has('r')) {
         if (params.get('r') === 'search') {
-          this.http.get<Quadruplex[]>(this.baseUrl + 'api/Search/GetResults').subscribe(result => {
-            this.csvData = JSON.parse(JSON.stringify(result));
-            this.rawResult = result;
-            this.setTableValues();
-          },
-            error => console.error(error));
+          this.runSearch();
         }
       }
       else {
+        this.isLoading = true;
         this.http.get<Quadruplex[]>(this.baseUrl + 'api/Quadruplex/GetQuadruplexes').subscribe(result => {
           this.csvData = JSON.parse(JSON.stringify(result));
           this.rawResult = result;
           this.setTableValues();
+          this.isLoading = false;
         },
-          error => console.error(error));
+          error => { console.error(error); this.isLoading = false; });
       }
     });
-    
+  }
+
+  runSearch() {
+    const filters = this.searchState.getFilters();
+    if (filters.length === 0) {
+      this.loadAll();
+      return;
+    }
+    this.isLoading = true;
+    this.http.post(this.baseUrl + 'api/Search/PostFilters', filters).subscribe(() => {
+      this.http.get<Quadruplex[]>(this.baseUrl + 'api/Search/GetResults').subscribe(result => {
+        this.csvData = JSON.parse(JSON.stringify(result));
+        this.rawResult = result;
+        this.setTableValues();
+        this.isLoading = false;
+      },
+        error => { console.error(error); this.isLoading = false; });
+    },
+      error => { console.error(error); this.isLoading = false; });
+  }
+
+  loadAll() {
+    this.searchState.clearAll();
+    this.isLoading = true;
+    this.http.get<Quadruplex[]>(this.baseUrl + 'api/Quadruplex/GetQuadruplexes').subscribe(result => {
+      this.csvData = JSON.parse(JSON.stringify(result));
+      this.rawResult = result;
+      this.setTableValues();
+      this.isLoading = false;
+    },
+      error => { console.error(error); this.isLoading = false; });
+  }
+
+  onFiltersChanged() {
+    this.runSearch();
+  }
+
+  onFiltersCleared() {
+    this.loadAll();
   }
 
   setTableValues() {

@@ -28,7 +28,13 @@
           <a class="mat-button" [hidden]="areButtonsHidden" [class.disabled]="selection.selected.length <= 0" csvLink [data]="selection.selected" [filename]="'quadruplexes.csv'">Save selected rows</a>
         </div>
 
-        <mat-table #table [dataSource]="dataSource" matSort aria-label="Elements">
+        <app-search-criteria-banner (filtersChanged)="onFiltersChanged()" (filtersCleared)="onFiltersCleared()"></app-search-criteria-banner>
+
+        <div *ngIf="isLoading" class="spinner-container">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <mat-table #table [dataSource]="dataSource" matSort aria-label="Elements" [class.loading]="isLoading">
           <!-- Id Column -->
           <div class="col-sm-8">
             <ng-container matColumnDef="id">
