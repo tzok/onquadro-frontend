@@ -7,8 +7,7 @@ namespace RNAqbase.Models.Search
 {
     public abstract class Filter
     {
-        public static Dictionary<string, object> ParameterDictionary = new Dictionary<string, object>();
-        public static List<Filter> Filters { get; set; }
+        public Dictionary<string, object> ParameterDictionary { get; set; } = new Dictionary<string, object>();
         public string FieldInSQL = "";
         protected bool isAnyValue = false;
         public JoinType joinType = JoinType.Where;        

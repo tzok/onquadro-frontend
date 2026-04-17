@@ -67,14 +67,11 @@ export class QuadruplexTableComponent implements OnInit {
       return;
     }
     this.isLoading = true;
-    this.http.post(this.baseUrl + 'api/Search/PostFilters', filters).subscribe(() => {
-      this.http.get<Quadruplex[]>(this.baseUrl + 'api/Search/GetResults').subscribe(result => {
-        this.csvData = JSON.parse(JSON.stringify(result));
-        this.rawResult = result;
-        this.setTableValues();
-        this.isLoading = false;
-      },
-        error => { console.error(error); this.isLoading = false; });
+    this.http.post<Quadruplex[]>(this.baseUrl + 'api/Search/Search', filters).subscribe(result => {
+      this.csvData = JSON.parse(JSON.stringify(result));
+      this.rawResult = result;
+      this.setTableValues();
+      this.isLoading = false;
     },
       error => { console.error(error); this.isLoading = false; });
   }

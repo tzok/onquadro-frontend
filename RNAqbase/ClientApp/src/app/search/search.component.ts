@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Inject, Output } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { ButtonEventRs } from '../button-event-rs';
 import { RowAttrPckt } from '../row-attr-pckt';
 import { TableContent } from '../table-content.enum';
@@ -22,7 +21,7 @@ export class SearchComponent {
   dataSource = Object.values(TableContent).map((v) => JSON.parse(v));
   httpSearchData: RowAttrPckt[] = [];
 
-  constructor(private http: HttpClient, private router: Router, @Inject('BASE_URL') private baseUrl: string, private searchState: SearchStateService) { }
+  constructor(private router: Router, private searchState: SearchStateService) { }
 
   rsEvent(pckt: ButtonEventRs) {
     if (pckt.reset) {
@@ -42,10 +41,7 @@ export class SearchComponent {
 
   postFilters() {
     this.searchState.setFilters(this.httpSearchData);
-    this.http.post(this.baseUrl + 'api/Search/PostFilters',
-      this.httpSearchData).subscribe(result => {
-        this.router.navigate(['/quadruplexes'], { queryParams: { r: 'search' } });
-      });
+    this.router.navigate(['/quadruplexes'], { queryParams: { r: 'search' } });
     this.httpSearchData.splice(0);
   }
 }

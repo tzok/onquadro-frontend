@@ -9,11 +9,11 @@ using System.Text;
 
 namespace RNAqbase.Services
 {
-    public class SearchService : ISearchService
+public class SearchService : ISearchService
     {
         private readonly ISearchRepository searchRepository;
-        private StringBuilder querySB = new StringBuilder(
-@"SELECT
+        private static readonly string BaseQuery = @"
+SELECT
  MAX(q.id) AS Id,
  MAX(q.public_id) AS Public_id,
  q.loop_class as LoopTopology,
@@ -22,21 +22,21 @@ namespace RNAqbase.Services
  to_char(MAX(p.release_date)::date, 'YYYY-MM-DD') as PdbDeposition,
  MAX(p.identifier) AS PdbId,
  MAX(p.public_id) AS Pdb_public_id,
-string_agg(DISTINCT(ion.name)::text, ', ') as Ion,
-string_agg(DISTINCT(ion.charge)::text, ', ') as Ion_charge,  
-MAX(p.assembly) AS AssemblyId,
-MAX(q_view.molecule) AS Molecule,
-MAX(p.experiment) AS Experiment,
-STRING_AGG(COALESCE((n1.short_name)||(n2.short_name)||(n3.short_name)||(n4.short_name), ''), '') AS Sequence,
-COUNT(DISTINCT SUBSTRING(t.onz::TEXT FROM 1 FOR 1)) AS TypeCount,
-COUNT(DISTINCT(t.id)) AS NumberOfTetrads,
-MAX(p.experiment) AS experiment,
-CASE
+ string_agg(DISTINCT(ion.name)::text, ', ') as Ion,
+ string_agg(DISTINCT(ion.charge)::text, ', ') as Ion_charge,  
+ MAX(p.assembly) AS AssemblyId,
+ MAX(q_view.molecule) AS Molecule,
+ MAX(p.experiment) AS Experiment,
+ STRING_AGG(COALESCE((n1.short_name)||(n2.short_name)||(n3.short_name)||(n4.short_name), ''), '') AS Sequence,
+ COUNT(DISTINCT SUBSTRING(t.onz::TEXT FROM 1 FOR 1)) AS TypeCount,
+ COUNT(DISTINCT(t.id)) AS NumberOfTetrads,
+ MAX(p.experiment) AS experiment,
+ CASE
 		WHEN max(q_view.chains) = 1 THEN 'unimolecular'
 		WHEN max(q_view.chains) = 2 THEN  'bimolecular'
 		ELSE 'tetramolecular'
 	END 
-	as TypeOfStrands
+ as TypeOfStrands
 FROM QUADRUPLEX q
 JOIN QUADRUPLEX_GBA qg on qg.quadruplex_id = q.id
 JOIN TETRAD t ON q.id = t.quadruplex_id
@@ -50,22 +50,31 @@ LEFT JOIN pdb_ion ON p.id = pdb_ion.pdb_id
 LEFT JOIN ion ON ion.id = pdb_ion.ion_id
 LEFT JOIN citation ON citation.pdb_id = p.id
 LEFT JOIN citation_author author ON author.citation_id = citation.id
-");
+";
+
         public SearchService(ISearchRepository searchRepository)
         {
             this.searchRepository = searchRepository;
         }
 
-        public async Task<List<QuadruplexTable>> GetAllResults()
+        public async Task<List<QuadruplexTable>> GetAllResults(List<Filter> filters)
         {
-            Filter.ParameterDictionary.Clear();
+            var parameterDictionary = new Dictionary<string, object>();
+            if (filters == null || filters.Count == 0)
+            {
+                return await searchRepository.GetAllResults($"{BaseQuery}GROUP BY q.id HAVING (COUNT(t.id) > 1)", parameterDictionary);
+            }
+
+            foreach (Filter filter in filters)
+            {
+                filter.ParameterDictionary = parameterDictionary;
+            }
+
+            StringBuilder querySB = new StringBuilder(BaseQuery);
             bool isFirst = true;
             StringBuilder queryToHavingSB = new StringBuilder("");
-            if (Filter.Filters == null) 
-            {
-                return await searchRepository.GetAllResults($"{querySB.ToString()}GROUP BY q.id HAVING (COUNT(t.id) > 1)", Filter.ParameterDictionary);
-            }
-            foreach (Filter filter in Filter.Filters)
+
+            foreach (Filter filter in filters)
             {
                 string queryFilter = filter.JoinConditions();
                 if (queryFilter == "")
@@ -92,7 +101,7 @@ LEFT JOIN citation_author author ON author.citation_id = citation.id
             }
 
             string query = $"{querySB.ToString()}GROUP BY q.id HAVING (COUNT(t.id) > 1){queryToHavingSB.ToString()};";
-            return await searchRepository.GetAllResults(query, Filter.ParameterDictionary);
+            return await searchRepository.GetAllResults(query, parameterDictionary);
         }
 
         public async Task<List<string>> GetExperimentalMethod() =>

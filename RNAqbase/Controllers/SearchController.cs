@@ -23,31 +23,25 @@ namespace RNAqbase.Controllers
 			this.searchService = searchService;
 		}
 
-		[HttpPost("[action]")]
-		public ActionResult PostFilters()
-		{
-			Request.EnableBuffering();
-			Request.Body.Position = 0;
-			string rawRequestBody = new StreamReader(Request.Body).ReadToEnd();
+[HttpPost("[action]")]
+        public async Task<ActionResult> Search()
+        {
+            Request.EnableBuffering();
+            Request.Body.Position = 0;
+            string rawRequestBody = new StreamReader(Request.Body).ReadToEnd();
 
-			try
+            List<Filter> filters;
+            try
             {
-				Filter.Filters = JsonConvert.DeserializeObject<List<Filter>>(rawRequestBody, new JsonFilterConverter());
+                filters = JsonConvert.DeserializeObject<List<Filter>>(rawRequestBody, new JsonFilterConverter());
             }
             catch
             {
-				Filter.Filters = null;
-				return BadRequest();
+                return BadRequest();
             }
 
-			return Ok();
-		}
-
-		[HttpGet("[action]")]
-		public async Task<IActionResult> GetResults()
-		{
-			return Ok(await searchService.GetAllResults());
-		}
+            return Ok(await searchService.GetAllResults(filters));
+        }
 
 		[HttpGet("[action]")]
 		public async Task<IActionResult> GetExperimentalMethod()
