@@ -23,7 +23,7 @@
                       <app-row-cond-addable [rowAttrID]="element.attrID" [rowAttrName]="element.attrName" [rowAttrType]="element.attrType" [rowElements]="element" [rowType]="element.rowType" [resetEvent]="triggerReset" [searchEvent]="triggerSearch" (searchResponse)="collectRowElements($event)"></app-row-cond-addable>
                     </ng-container>
                     <ng-container *ngIf="element.rowType !== 'addable'">
-                      <app-row-cond-nonaddable [rowAttrID]="element.attrID" [rowElements]="element" [rowType]="element.rowType" [rowAttrType]="element.attrType" [resetEvent]="triggerReset" [searchEvent]="triggerSearch" (searchResponse)="collectRowElements($event)"></app-row-cond-nonaddable>
+                      <app-row-cond-nonaddable [rowAttrID]="element.attrID" [rowElements]="element" [rowType]="element.rowType" [rowAttrType]="element.attrType" [resetEvent]="triggerReset" [searchEvent]="triggerSearch" [initialSelections]="element.initialSelections" (searchResponse)="collectRowElements($event)"></app-row-cond-nonaddable>
                     </ng-container>
                   </mat-cell>
                 </ng-container>

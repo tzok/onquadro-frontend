@@ -1,7 +1,7 @@
 <div id="parentRow">
   <div class="conditionsElem">
     <ng-container *ngFor="let cond of rowData.conditions">
-      <app-cond-clickable-cell [ID]="rowAttrID" [condData]="cond" [eventReceiver]="msg" [attrType]="rowAttrType" (clicked)="respondClickEvent($event)"></app-cond-clickable-cell>
+      <app-cond-clickable-cell [ID]="rowAttrID" [condData]="cond" [eventReceiver]="msg" [attrType]="rowAttrType" [startSelected]="isInitiallySelected(cond.value)" (clicked)="respondClickEvent($event)"></app-cond-clickable-cell>
     </ng-container>
   </div>
 </div>

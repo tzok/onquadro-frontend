@@ -13,6 +13,7 @@ export class CondClickableCellComponent {
   @Input() attrType: string;
   @Input() condData: Condition;
   @Input() eventReceiver: RowCommPckt;
+  @Input() startSelected: boolean = false;
   @Output() clicked = new EventEmitter<CondCommPckt>();
   isClicked: boolean;
 
@@ -23,9 +24,13 @@ export class CondClickableCellComponent {
   }
 
   ngOnInit() {
-    this.isClicked = false;
-    if (this.condData.value == 'any') {
-      this.clickEvent();
+    if (this.startSelected) {
+      this.isClicked = true;
+    } else {
+      this.isClicked = false;
+      if (this.condData.value == 'any') {
+        this.clickEvent();
+      }
     }
   }
 

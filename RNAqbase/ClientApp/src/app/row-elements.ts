@@ -8,4 +8,5 @@ export interface RowElements {
   conditions: Array<Condition>;
   rowType: string;
   maxCondCount: number;
+  initialSelections?: string[];
 }

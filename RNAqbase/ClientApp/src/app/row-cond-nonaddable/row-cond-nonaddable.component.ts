@@ -23,6 +23,7 @@ export class RowCondNonaddableComponent implements OnInit {
   @Input() rowElements: RowElements;
   @Input() resetEvent: EventEmitter<any>;
   @Input() searchEvent: EventEmitter<any>;
+  @Input() initialSelections: string[] = [];
   @Output() searchResponse = new EventEmitter<RowAttrPckt>();
 
   constructor(private httpService: AttrHttpGetService) { }
@@ -44,9 +45,11 @@ export class RowCondNonaddableComponent implements OnInit {
     this.rowData = this.rowElements;
     if (this.rowData.conditions.length === 1)
       this.setRowData();
-    else
+    else {
       for (let i of this.rowData.conditions)
         this.rowElementsStatus[i.value] = false;
+      this.applyInitialSelections();
+    }
   }
 
   private clickEventLogic(childPckt: CondCommPckt) {
@@ -119,6 +122,22 @@ export class RowCondNonaddableComponent implements OnInit {
         this.rowData.conditions.push({ value: result[i].trim(), operator: '' });
       for (let i of this.rowData.conditions)
         this.rowElementsStatus[i.value] = false;
+      this.applyInitialSelections();
     });
+  }
+
+  applyInitialSelections() {
+    if (this.initialSelections && this.initialSelections.length > 0) {
+      this.rowElementsStatus['any'] = false;
+      for (const value of this.initialSelections) {
+        if (this.rowElementsStatus.hasOwnProperty(value)) {
+          this.rowElementsStatus[value] = true;
+        }
+      }
+    }
+  }
+
+  isInitiallySelected(value: string): boolean {
+    return this.initialSelections && this.initialSelections.indexOf(value) !== -1;
   }
 }
