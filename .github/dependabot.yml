@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/RNAqbase"
+    directory: "/RNAqbase/ClientApp"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -13,6 +13,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # The client is pinned to Angular 6. Any @angular* upgrade is a
+      # framework migration, not a dependency bump.
+      - dependency-name: "@angular*"
+      # node-forge is dev-only (webpack-dev-server -> selfsigned) and no
+      # patched version is reachable from Angular 6. Accepted risk until
+      # the Angular migration.
+      - dependency-name: "node-forge"
 
   - package-ecosystem: "docker"
     directory: "/"
